@@ -95,7 +95,12 @@ impl<'a> Parser<'a> {
 
         debug!("Parsing finished")
 
-        ExprNode::new(Expr::SExpr(values), location)
+        // Wrap everything in an SExpr, if what we parsed isn't already one
+        if values.len() == 1 {
+            values.pop().unwrap()
+        } else {
+            ExprNode::new(Expr::SExpr(values), location)
+        }
     }
 
 
@@ -176,27 +181,25 @@ mod tests {
                 vec![LPAREN, SYMBOL(rcstr("+")), INTEGER(3), INTEGER(2), RPAREN],
                 |p| p.parse()
             ),
-            vec![
-                ExprNode::new(
-                    Expr::SExpr(
-                        vec![
-                            ExprNode::new(
-                                Expr::Symbol(rcstr("+")),
-                                dummy_source()
-                            ),
-                            ExprNode::new(
-                                Expr::Number(3),
-                                dummy_source()
-                            ),
-                            ExprNode::new(
-                                Expr::Number(2),
-                                dummy_source()
-                            ),
-                        ]
-                    ),
-                    dummy_source()
-                )
-            ]
+            ExprNode::new(
+                Expr::SExpr(
+                    vec![
+                        ExprNode::new(
+                            Expr::Symbol(rcstr("+")),
+                            dummy_source()
+                        ),
+                        ExprNode::new(
+                            Expr::Number(3),
+                            dummy_source()
+                        ),
+                        ExprNode::new(
+                            Expr::Number(2),
+                            dummy_source()
+                        ),
+                    ]
+                ),
+                dummy_source()
+            )
         )
     }
 }
