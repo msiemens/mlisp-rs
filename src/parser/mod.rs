@@ -86,15 +86,17 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
 
-    pub fn new(source: &'a str, file: &'a str) -> ParserResult<Parser<'a>> {
+    // Note: Constructors are private!
+
+    fn new(source: &'a str, file: &'a str) -> ParserResult<Parser<'a>> {
         Parser::with_lexer(box FileLexer::new(source, file))
     }
 
-    pub fn with_lexer(lx: Box<Lexer + 'a>) -> ParserResult<Parser<'a>> {
+    fn with_lexer(lx: Box<Lexer + 'a>) -> ParserResult<Parser<'a>> {
         let mut lx = lx;
 
         Ok(Parser {
-            token: try!(lx.next_token()),  // FIXME: Better solution
+            token: try!(lx.next_token()),
             location: lx.get_source(),
             buffer: DList::new(),
             lexer: lx
@@ -131,14 +133,15 @@ impl<'a> Parser<'a> {
     // --- Public methods -------------------------------------------------------
 
     /// Parse all the input
-    pub fn parse(&mut self) -> ParserResult<ExprNode> {
-        let location = self.update_location();
+    pub fn parse<'a>(source: &'a str, file: &'a str) -> ParserResult<ExprNode> {
+        let mut parser = try!(Parser::new(source, file));
+        let location = parser.update_location();
         let mut values = vec![];
 
         debug!("Starting parsing")
 
-        while self.token != Token::EOF {
-            values.push(try!(self.parse_expr()));
+        while parser.token != Token::EOF {
+            values.push(try!(parser.parse_expr()));
         }
 
         debug!("Parsing finished")

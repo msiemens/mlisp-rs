@@ -29,12 +29,7 @@ mod main {
                         else { println!(""); break };
             readline::add_history(input[]);
 
-            let ast = match {
-                match Parser::new(input[], "<input>") {
-                    Ok(ref mut parser) => parser.parse(),
-                    Err(err) => Err(err)
-                }
-            } {
+            let ast = match Parser::parse(input[], "<input>") {
                 Ok(lval) => lval,
                 Err(err) => {
                     let mut t = term::stdout().unwrap();
