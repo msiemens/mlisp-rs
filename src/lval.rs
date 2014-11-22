@@ -2,6 +2,7 @@
 
 //! LVal: The basic object type
 
+use std;
 use std::fmt;
 use parser::ast::{Expr, ExprNode};
 use util::print_error;
@@ -19,9 +20,28 @@ macro_rules! err(
 )
 
 
+// Tricking the compiler into thinking that floats are Eq...
+// Fixme: Better solution?
+#[deriving(PartialEq)]
+pub struct Float(f64);
+
+impl std::cmp::Eq for Float {
+    #[inline]
+    fn assert_receiver_is_total_eq(&self) {}
+}
+
+impl fmt::Show for Float {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Float(value) = *self;
+        write!(f, "{}", value)
+    }
+}
+
+
 /// A basic object
+#[deriving(Eq, PartialEq)]
 pub enum LVal {
-    Num(f64),
+    Num(Float),
     Err(String),
     Sym(String),
     SExpr(Vec<LVal>)
@@ -33,7 +53,7 @@ impl LVal {
 
     /// Create a new number lval
     pub fn num(value: f64) -> LVal {
-        LVal::Num(value)
+        LVal::Num(Float(value))
     }
 
     /// Create a new error lval
@@ -74,6 +94,7 @@ impl LVal {
 
     pub fn get_num(&self) -> f64 {
         if let LVal::Num(i) = *self {
+            let Float(i) = i;
             return i
         } else {
             panic!("Cannot get number of non-number: {}", self)
