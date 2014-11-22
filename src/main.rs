@@ -2,8 +2,10 @@
 
 //! Lispy-rs
 
-extern crate term;
 #[phase(plugin, link)] extern crate log;
+extern crate term;
+
+extern crate readline;
 
 // FIXME(#18822): Remove `pub`
 pub mod parser;
@@ -12,7 +14,8 @@ pub mod lval;
 
 #[cfg(not(test))]
 mod main {
-    use std;
+    use readline;
+
     use lval::LVal;
     use parser::Parser;
 
@@ -21,12 +24,9 @@ mod main {
         println!("Press Ctrl+c to exit");
 
         loop {
-            print!("mlisp> ");
-
-            let input = std::io::stdin().read_line().unwrap();
-            if input.as_bytes()[0] == 4 {
-                break
-            }
+            let input = if let Some(i) = readline::readline("mlisp> ") { i }
+                        else { println!(""); break };
+            readline::add_history(input[]);
 
             let ast = Parser::new(input[], "<input>").parse();
             let lval = LVal::from_ast(ast);

@@ -15,4 +15,8 @@ debug = true
 
 [profile.test]
 opt-level = 0
-debug = true
+#debug = true
+
+
+[dependencies.readline]
+git = "https://github.com/shaleh/rust-readline"
