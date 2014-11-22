@@ -311,7 +311,7 @@ mod tests {
     use parser::util::rcstr;
 
     fn tokenize(src: &'static str) -> Vec<Token> {
-        FileLexer::new(src, "<test>").tokenize()
+        FileLexer::new(src, "<test>").tokenize().unwrap()
     }
 
     #[test]

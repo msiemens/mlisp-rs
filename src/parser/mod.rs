@@ -228,7 +228,7 @@ mod tests {
     use super::*;
 
     fn parse<'a, T>(toks: Vec<Token>, f: |&mut Parser<'a>| -> T) -> T {
-        f(&mut Parser::with_lexer(box toks as Box<Lexer>))
+        f(&mut Parser::with_lexer(box toks as Box<Lexer>).unwrap())
     }
 
     #[test]
@@ -236,7 +236,7 @@ mod tests {
         assert_eq!(
             parse(
                 vec![LPAREN, SYMBOL(rcstr("+")), INTEGER(3), INTEGER(2), RPAREN],
-                |p| p.parse()
+                |p| p.parse_expr().unwrap()
             ),
             ExprNode::new(
                 Expr::SExpr(
