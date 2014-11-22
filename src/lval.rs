@@ -6,10 +6,10 @@ use parser::ast::{Expr, ExprNode};
 
 /// A basic object
 pub enum LVal {
-    Num(i64),
+    Num(f64),
     Err(String),
     Sym(String),
-    SExpr(Vec<Box<LVal>>)
+    SExpr(Vec<LVal>)
 }
 
 impl LVal {
@@ -17,7 +17,7 @@ impl LVal {
     // --- Constructors ---------------------------------------------------------
 
     /// Create a new number lval
-    pub fn num(value: i64) -> LVal {
+    pub fn num(value: f64) -> LVal {
         LVal::Num(value)
     }
 
@@ -39,7 +39,7 @@ impl LVal {
     /// Construct a lval from a given AST
     pub fn from_ast(ast: ExprNode) -> LVal {
         match ast.value {
-            Expr::Number(i) => LVal::num(i),
+            Expr::Number(i) => LVal::num(i as f64),
             Expr::Symbol(s) => LVal::sym(s[]),
             Expr::SExpr(exprs) => {
                 let mut sexpr = LVal::sexpr();
@@ -63,9 +63,9 @@ impl LVal {
     /// Panics when `self` is not a SExpr
     pub fn append(&mut self, expr: LVal) {
         if let LVal::SExpr(ref mut values) = *self {
-            values.push(box expr);
+            values.push(expr);
         } else {
-            assert!(false, "cannot extend a non-sexpr")
+            panic!("cannot extend a non-sexpr")
         }
     }
 }

@@ -10,6 +10,7 @@ extern crate readline;
 // FIXME(#18822): Remove `pub`
 pub mod parser;
 pub mod lval;
+pub mod eval;
 
 
 #[cfg(not(test))]
@@ -17,6 +18,7 @@ mod main {
     use readline;
     use term;
 
+    use eval::eval;
     use lval::LVal;
     use parser::{Parser, ParserError};
 
@@ -43,7 +45,7 @@ mod main {
             };
             let lval = LVal::from_ast(ast);
 
-            println!("{}", lval);
+            println!("{}", eval(lval));
         }
 
         println!("Exiting...")

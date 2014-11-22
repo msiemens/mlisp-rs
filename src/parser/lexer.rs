@@ -194,6 +194,12 @@ impl<'a> FileLexer<'a> {
         Ok(Token::INTEGER(sign * integer))
     }
 
+    /// Tokenize a symbol
+    fn tokenize_symbol(&mut self) -> LexerResult<Token> {
+        let symbol = self.collect(|c| c.is_alphanumeric() || *c == '_');
+        Ok(Token::SYMBOL(symbol))
+    }
+
 
     /// Read the next token and return it
     fn read_token(&mut self) -> LexerResult<Option<Token>> {
@@ -206,7 +212,10 @@ impl<'a> FileLexer<'a> {
             c if c.is_digit() => {
                 try!(self.tokenize_number())
             },
-            '+' | '-' | '*' | '/' => {
+            c if c.is_alphanumeric() || c == '_' => {
+                try!(self.tokenize_symbol())
+            },
+            '+' | '-' | '*' | '/' | '%' => {
                 let is_num = c == '-' && match self.nextch() {
                     Some(c) => c.is_digit(),
                     None => false
