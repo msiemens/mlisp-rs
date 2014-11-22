@@ -11,6 +11,7 @@ extern crate readline;
 pub mod parser;
 pub mod lval;
 pub mod eval;
+pub mod builtin;
 pub mod util;
 
 
