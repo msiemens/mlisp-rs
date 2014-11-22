@@ -159,8 +159,6 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
-
     use parser::ast::*;
     use parser::tokens::dummy_source;
     use parser::tokens::Token;

@@ -192,7 +192,7 @@ impl<'a> FileLexer<'a> {
                 self.bump();
                 return None;
             },
-            c => {
+            _ => {
                 self.fatal(format!("unknown token: {}", self.curr_repr()))
                 // UNKNOWN(format!("{}", c).into_string())
             }
