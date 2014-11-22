@@ -1,5 +1,3 @@
-#![macro_escape]
-
 //! Miscellaneous utilities
 
 use std::rc::Rc;

@@ -11,24 +11,17 @@ extern crate readline;
 pub mod parser;
 pub mod lval;
 pub mod eval;
+pub mod util;
 
 
 #[cfg(not(test))]
 mod main {
     use readline;
-    use term;
 
+    use util::print_error;
     use eval::eval;
     use lval::LVal;
-    use parser::{Parser, ParserError};
-
-    fn print_error(err: ParserError) {
-        let mut t = term::stdout().unwrap();
-        t.fg(term::color::RED).unwrap();
-        (write!(t, "Error: ")).unwrap();
-        t.reset().unwrap();
-        (write!(t, "{}\n", err)).unwrap();
-    }
+    use parser::Parser;
 
     pub fn main() {
         println!("MLisp Version 0.0.0.1");
@@ -44,7 +37,7 @@ mod main {
 
             let ast = match Parser::parse(input[], "<input>") {
                 Ok(lval) => lval,
-                Err(err) => { print_error(err); continue }
+                Err(err) => { print_error(format!("{}\n", err)[]); continue }
             };
             let lval = LVal::from_ast(ast);
 

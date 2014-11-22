@@ -1,7 +1,22 @@
+#![macro_escape]
+
 //! LVal: The basic object type
 
 use std::fmt;
 use parser::ast::{Expr, ExprNode};
+use util::print_error;
+
+
+/// Return an error
+macro_rules! err(
+    ($msg:expr) => (
+        return LVal::err($msg.into_string())
+    );
+
+    ($msg:expr, $( $args:expr ),* ) => (
+        return LVal::err(format!($msg, $($args),* ))
+    );
+)
 
 
 /// A basic object
@@ -22,8 +37,8 @@ impl LVal {
     }
 
     /// Create a new error lval
-    pub fn err(msg: &str) -> LVal {
-        LVal::Err(msg.into_string())
+    pub fn err(msg: String) -> LVal {
+        LVal::Err(msg)
     }
 
     /// Create a new symbol lval
@@ -57,6 +72,13 @@ impl LVal {
     /// Delete a lval
     pub fn del(self) {}
 
+    pub fn get_num(&self) -> f64 {
+        if let LVal::Num(i) = *self {
+            return i
+        } else {
+            panic!("Cannot get number of non-number: {}", self)
+        }
+    }
 
     /// Append a lval to a sexpr
     ///
@@ -75,7 +97,7 @@ impl fmt::Show for LVal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LVal::Num(i)          => write!(f, "{}", i),
-            LVal::Err(ref msg)    => write!(f, "Error: {}", msg),
+            LVal::Err(ref msg)    => { print_error(msg[]); Ok(()) },
             LVal::Sym(ref symbol) => write!(f, "{}", symbol),
             LVal::SExpr(ref values) => {
                 write!(f, "({})", values.iter()
