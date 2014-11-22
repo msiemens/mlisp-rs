@@ -1,19 +1,67 @@
 //! Input tokenizer
 
+use std;
 use std::rc::Rc;
 use parser::tokens::{Token, SourceLocation, dummy_source};
-use parser::util::{SharedString, rcstr, rcstring, fatal};
+use parser::util::{SharedString, rcstr, rcstring};
 
+// --- Lexer: Error -------------------------------------------------------------
+
+pub type LexerResult<T> = Result<T, LexerError>;
+
+pub enum LexerError {
+    UnknownToken {
+        token: SharedString,  // result of curr_repr
+        location: SourceLocation
+    },
+    InvalidInteger {
+        input: SharedString,
+        location: SourceLocation
+    }
+}
+
+impl std::fmt::Show for LexerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            LexerError::UnknownToken { ref token, ref location } => {
+                write!(f, "unknown token: `{}` at {}", token, location)
+            },
+            LexerError::InvalidInteger { ref input, ref location } => {
+                write!(f, "invalid integer: `{}` at {}", input, location)
+            }
+        }
+    }
+}
+
+macro_rules! unknown_token(
+    ($token:expr @ $location:expr) => (
+        return Err(LexerError::UnknownToken {
+            token: $token.clone(),
+            location: $location
+        })
+    )
+)
+
+macro_rules! invalid_integer(
+    ($input:expr @ $location:expr) => (
+        return Err(LexerError::InvalidInteger {
+            input: $input.clone(),
+            location: $location
+        })
+    )
+)
+
+// --- Lexer --------------------------------------------------------------------
 
 pub trait Lexer {
     /// Get the source of the current token
     fn get_source(&self) -> SourceLocation;
 
     /// Get the next token
-    fn next_token(&mut self) -> Token;
+    fn next_token(&mut self) -> LexerResult<Token>;
 
     /// Tokenize the input into a vector
-    fn tokenize(&mut self) -> Vec<Token>;
+    fn tokenize(&mut self) -> LexerResult<Vec<Token>>;
 }
 
 
@@ -38,14 +86,6 @@ impl<'a> FileLexer<'a> {
             lineno: 1
         }
     }
-
-    // --- Internal methods -----------------------------------------------------
-
-    /// Abort execution with a fatal error
-    fn fatal(&self, msg: String) -> ! {
-        fatal(msg, &self.get_source())
-    }
-
 
     /// --- Internal methods: Helpers -------------------------------------------
 
@@ -139,7 +179,7 @@ impl<'a> FileLexer<'a> {
     // --- Internal methods: Tokenizers -----------------------------------------
 
     /// Tokenize a number
-    fn tokenize_number(&mut self) -> Token {
+    fn tokenize_number(&mut self) -> LexerResult<Token> {
         let sign = if self.curr == Some('-') {
             self.bump();
             -1
@@ -148,26 +188,23 @@ impl<'a> FileLexer<'a> {
         };
         let integer = self.collect(|c| c.is_digit());
 
-        let integer = if let Some(m) = from_str(integer[]) {
-            m
-        } else {
-            self.fatal(format!("invalid integer: `{}`", integer))
-        };
+        let integer = if let Some(m) = from_str(integer[]) { m }
+                      else { invalid_integer!(integer @ self.get_source()) };
 
-        Token::INTEGER(sign * integer)
+        Ok(Token::INTEGER(sign * integer))
     }
 
 
     /// Read the next token and return it
-    fn read_token(&mut self) -> Option<Token> {
+    fn read_token(&mut self) -> LexerResult<Option<Token>> {
         let c = match self.curr {
             Some(c) => c,
-            None => return Some(Token::EOF)
+            None => return Ok(Some(Token::EOF))
         };
 
         let token = match c {
             c if c.is_digit() => {
-                self.tokenize_number()
+                try!(self.tokenize_number())
             },
             '+' | '-' | '*' | '/' => {
                 let is_num = c == '-' && match self.nextch() {
@@ -177,7 +214,7 @@ impl<'a> FileLexer<'a> {
 
                 if is_num {
                     // Tokenize number
-                    self.tokenize_number()
+                    try!(self.tokenize_number())
                 } else {
                     self.bump();
                     Token::SYMBOL(rcstring(String::from_chars(&[c])))
@@ -190,15 +227,15 @@ impl<'a> FileLexer<'a> {
                 if c == '\n' { self.lineno += 1; }
 
                 self.bump();
-                return None;
+                return Ok(None);
             },
             _ => {
-                self.fatal(format!("unknown token: {}", self.curr_repr()))
+                unknown_token!(self.curr_repr() @ self.get_source())
                 // UNKNOWN(format!("{}", c).into_string())
             }
         };
 
-        Some(token)
+        Ok(Some(token))
     }
 }
 
@@ -210,22 +247,22 @@ impl<'a> Lexer for FileLexer<'a> {
         }
     }
 
-    fn next_token(&mut self) -> Token {
+    fn next_token(&mut self) -> LexerResult<Token> {
         if self.is_eof() {
-            Token::EOF
+            Ok(Token::EOF)
         } else {
-            let mut tok = self.read_token();
+            let mut tok = try!(self.read_token());
             while tok.is_none() {
                 // Token is to be ignored, try next one
-                tok = self.read_token();
+                tok = try!(self.read_token());
             }
 
-            tok.unwrap()  // Can't really be None any more
+            Ok(tok.unwrap())  // Can't really be None any more
         }
     }
 
     #[allow(dead_code)]  // Used for tests
-    fn tokenize(&mut self) -> Vec<Token> {
+    fn tokenize(&mut self) -> LexerResult<Vec<Token>> {
         let mut tokens = vec![];
 
         // NOTE: We can't use `for c in self.iter` because then we can't
@@ -233,14 +270,14 @@ impl<'a> Lexer for FileLexer<'a> {
         while !self.is_eof() {
             debug!("Processing {}", self.curr)
 
-            if let Some(t) = self.read_token() {
+            if let Some(t) = try!(self.read_token()) {
                 tokens.push(t);
             }
 
             debug!("So far: {}", tokens)
         }
 
-        tokens
+        Ok(tokens)
     }
 }
 
@@ -250,18 +287,18 @@ impl Lexer for Vec<Token> {
         dummy_source()
     }
 
-    fn next_token(&mut self) -> Token {
+    fn next_token(&mut self) -> LexerResult<Token> {
         match self.remove(0) {
-            Some(tok) => tok,
-            None => Token::EOF
+            Some(tok) => Ok(tok),
+            None => Ok(Token::EOF)
         }
     }
 
-    fn tokenize(&mut self) -> Vec<Token> {
+    fn tokenize(&mut self) -> LexerResult<Vec<Token>> {
         let mut v = vec![];
         v.push_all(self[]);
 
-        v
+        Ok(v)
     }
 }
 

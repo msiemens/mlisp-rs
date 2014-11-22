@@ -1,17 +1,80 @@
 //! The Parser
-// TODO: Don't panic on errors but return Error
 
+use std;
 use std::collections::DList;
 use parser::ast::{Expr, ExprNode};
 use parser::tokens::{Token, SourceLocation};
-use parser::lexer::{Lexer, FileLexer};
-use parser::util::fatal;
+use parser::lexer::{Lexer, FileLexer, LexerError};
 
 pub mod util;
 pub mod tokens;
 pub mod ast;
 pub mod lexer;
 
+// --- Parser: Error ------------------------------------------------------------
+
+pub type ParserResult<T> = Result<T, ParserError>;
+
+pub enum ParserError {
+    UnexpectedToken {
+        found: Token,
+        expected: Option<String>,
+        location: SourceLocation
+    },
+    FromLexer(LexerError)
+}
+
+impl std::fmt::Show for ParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            ParserError::UnexpectedToken { ref found, ref expected, ref location } => {
+                match *expected {
+                    Some(ref expected) => {
+                        write!(f, "Expected {}, found `{}` at {}", expected, found, location)
+                    },
+                    None => {
+                        write!(f, "Unexpected token: `{}` at {}", found, location)
+                    }
+                }
+            },
+            ParserError::FromLexer(ref lxerr) => write!(f, "{}", lxerr)
+        }
+    }
+}
+
+impl std::error::FromError<LexerError> for ParserError {
+    fn from_error(err: LexerError) -> ParserError {
+        ParserError::FromLexer(err)
+    }
+}
+
+macro_rules! unexpected(
+    ($token:expr @ $location:stmt) => (
+        return Err(ParserError::UnexpectedToken {
+            found: $token.clone(),
+            expected: None,
+            location: $location
+        })
+    );
+
+    ($token:expr instead of $msg:expr @ $location:expr) => (
+        return Err(ParserError::UnexpectedToken {
+            found: $token.clone(),
+            expected: Some($msg.into_string()),
+            location: $location
+        })
+    );
+
+    ($token:expr instead of token: $exp_token:expr @ $location:expr) => (
+        return Err(ParserError::UnexpectedToken {
+            found: $token.clone(),
+            expected: Some(format!("`{}`", $exp_token)),
+            location: $location
+        })
+    );
+)
+
+// --- Parser -------------------------------------------------------------------
 
 /// Lispy Parser
 pub struct Parser<'a> {
@@ -23,42 +86,30 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
 
-    pub fn new(source: &'a str, file: &'a str) -> Parser<'a> {
+    pub fn new(source: &'a str, file: &'a str) -> ParserResult<Parser<'a>> {
         Parser::with_lexer(box FileLexer::new(source, file))
     }
 
-    pub fn with_lexer(lx: Box<Lexer + 'a>) -> Parser<'a> {
+    pub fn with_lexer(lx: Box<Lexer + 'a>) -> ParserResult<Parser<'a>> {
         let mut lx = lx;
 
-        Parser {
-            token: lx.next_token(),
+        Ok(Parser {
+            token: try!(lx.next_token()),  // FIXME: Better solution
             location: lx.get_source(),
             buffer: DList::new(),
             lexer: lx
-        }
+        })
     }
 
     // --- Internal methods -----------------------------------------------------
 
-    /// Abort execution with a fatal error
-    fn fatal(&self, msg: String) -> ! {
-        fatal(msg, &self.location);
-    }
-
-    /// Abort execution because an unexpected token has been visited
-    fn unexpected_token(&self, tok: &Token, expected: Option<&'static str>) -> ! {
-        match expected {
-            Some(ex) => self.fatal(format!("unexpected token: `{}`, expected {}", tok, ex)),
-            None => self.fatal(format!("unexpected token: `{}`", tok))
-        }
-    }
-
     /// Move on to the next token
-    fn bump(&mut self) {
+    fn bump(&mut self) -> ParserResult<()> {
         self.token = match self.buffer.pop_front() {
             Some(tok) => tok,
-            None => self.lexer.next_token()
+            None => try!(self.lexer.next_token())
         };
+        Ok(())
     }
 
     /// Update the current source location
@@ -68,91 +119,96 @@ impl<'a> Parser<'a> {
     }
 
     /// Expect the current token to be `tok` and continue or fail
-    fn expect(&mut self, tok: &Token) {
+    fn expect(&mut self, tok: &Token) -> ParserResult<()> {
         if self.token == *tok {
-            self.bump();
+            try!(self.bump());
+            Ok(())
         } else {
-            self.fatal(format!("expected `{}`, found `{}`", tok, self.token))
+            unexpected!(self.token instead of token: tok @ self.location.clone())
         }
     }
 
     // --- Public methods -------------------------------------------------------
 
     /// Parse all the input
-    pub fn parse(&mut self) -> ExprNode {
+    pub fn parse(&mut self) -> ParserResult<ExprNode> {
         let location = self.update_location();
         let mut values = vec![];
 
         debug!("Starting parsing")
 
         while self.token != Token::EOF {
-            values.push(self.parse_expr());
+            values.push(try!(self.parse_expr()));
         }
 
         debug!("Parsing finished")
 
         // Wrap everything in an SExpr, if what we parsed isn't already one
         if values.len() == 1 {
-            values.pop().unwrap()
+            Ok(values.pop().unwrap())
         } else {
-            ExprNode::new(Expr::SExpr(values), location)
+            Ok(ExprNode::new(Expr::SExpr(values), location))
         }
     }
 
 
     /// Parse a number
-    fn parse_number(&mut self) -> ExprNode {
+    fn parse_number(&mut self) -> ParserResult<ExprNode> {
         let location = self.update_location();
 
         let number = match self.token {
             Token::INTEGER(i) => Expr::Number(i),
-            _ => self.unexpected_token(&self.token, Some("a number"))
+            _ => unexpected!(self.token instead of "a number" @ location)
         };
-        self.bump();
+        try!(self.bump());
 
-        ExprNode::new(number, location)
+        Ok(ExprNode::new(number, location))
     }
 
     /// Parse a symbol
-    fn parse_symbol(&mut self) -> ExprNode {
+    fn parse_symbol(&mut self) -> ParserResult<ExprNode> {
         let location = self.update_location();
 
         let symbol = match self.token {
             Token::SYMBOL(ref s) => Expr::Symbol(s.clone()),
-            _ => self.unexpected_token(&self.token, Some("a symbol"))
+            _ => unexpected!(self.token instead of "a symbol" @ location)
         };
-        self.bump();
+        try!(self.bump());
 
-        ExprNode::new(symbol, location)
+        Ok(ExprNode::new(symbol, location))
     }
 
     /// Parse a SExpr
-    fn parse_sexpr(&mut self) -> ExprNode {
+    fn parse_sexpr(&mut self) -> ParserResult<ExprNode> {
         let location = self.update_location();
 
-        self.expect(&Token::LPAREN);
+        try!(self.expect(&Token::LPAREN));
 
         let mut exprs = vec![];
         while self.token != Token::RPAREN {
-            exprs.push(self.parse_expr());
+            let expr = match self.parse_expr() {
+                Ok(expr) => expr,
+                Err(err) => return Err(err)
+            };
+            exprs.push(expr);
         }
 
-        self.expect(&Token::RPAREN);
+        try!(self.expect(&Token::RPAREN));
 
-        ExprNode::new(Expr::SExpr(exprs), location)
+        Ok(ExprNode::new(Expr::SExpr(exprs), location))
     }
 
     /// Parse a single expression
-    fn parse_expr(&mut self) -> ExprNode {
+    fn parse_expr(&mut self) -> ParserResult<ExprNode> {
         let stmt = match self.token {
-            Token::INTEGER(_) => self.parse_number(),
-            Token::SYMBOL(_)  => self.parse_symbol(),
-            Token::LPAREN     => self.parse_sexpr(),
+            Token::INTEGER(_) => try!(self.parse_number()),
+            Token::SYMBOL(_)  => try!(self.parse_symbol()),
+            Token::LPAREN     => try!(self.parse_sexpr()),
 
-            ref tok => self.unexpected_token(tok, Some("a statement"))
+            _ => unexpected!(self.token instead of "an expression" @ self.location.clone())
         };
 
-        stmt
+        Ok(stmt)
     }
 }
 

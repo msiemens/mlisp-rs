@@ -15,6 +15,7 @@ pub mod lval;
 #[cfg(not(test))]
 mod main {
     use readline;
+    use term;
 
     use lval::LVal;
     use parser::Parser;
@@ -28,7 +29,23 @@ mod main {
                         else { println!(""); break };
             readline::add_history(input[]);
 
-            let ast = Parser::new(input[], "<input>").parse();
+            let ast = match {
+                match Parser::new(input[], "<input>") {
+                    Ok(ref mut parser) => parser.parse(),
+                    Err(err) => Err(err)
+                }
+            } {
+                Ok(lval) => lval,
+                Err(err) => {
+                    let mut t = term::stdout().unwrap();
+                    t.fg(term::color::RED).unwrap();
+                    (write!(t, "Error: ")).unwrap();
+                    t.reset().unwrap();
+                    (write!(t, "{}\n", err)).unwrap();
+
+                    continue
+                }
+            };
             let lval = LVal::from_ast(ast);
 
             println!("{}", lval);
