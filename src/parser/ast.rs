@@ -1,47 +1,50 @@
+//! Abstract syntax tree
+
 use std::fmt;
 use parser::tokens::SourceLocation;
-use parser::tokens::Token;
 use parser::util::SharedString;
 
 
-macro_rules! define(
-    ( $name:ident -> $wrapper:ident : $( $variants:ident ( $( $arg:ty ),* ) ),* ) => {
-        #[deriving(PartialEq, Eq, Clone)]
-        pub struct $wrapper {
-            pub value: $name,
-            pub location: SourceLocation
+// --- AST Node: Expression -----------------------------------------------------
+
+/// An expression AST node
+#[deriving(PartialEq, Eq, Clone)]
+pub struct ExprNode {
+    /// The expression's value
+    pub value: Expr,
+
+    /// The location of the definition in the input
+    pub location: SourceLocation
+}
+
+impl ExprNode {
+    pub fn new(expr: Expr, location: SourceLocation) -> ExprNode {
+        ExprNode {
+            value: expr,
+            location: location
         }
+    }
+}
 
-        impl $wrapper {
-            pub fn new(stmt: $name, location: SourceLocation) -> $wrapper {
-                $wrapper {
-                    value: stmt,
-                    location: location
-                }
-            }
-        }
+impl fmt::Show for ExprNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
 
-        impl fmt::Show for $wrapper {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                write!(f, "{}", self.value)
-            }
-        }
+// --- AST Node: Expression: Values ---------------------------------------------
 
-        #[deriving(PartialEq, Eq, Clone)]
-        pub enum $name {
-            $( $variants ( $( $arg ),* ) ),*
-        }
-    };
-)
-
-
-define!(
-Expr -> ExprNode:
+#[deriving(PartialEq, Eq, Clone)]
+pub enum Expr {
+    /// A SExpr
     SExpr(Vec<ExprNode>),
-    Symbol(SharedString),
-    Number(i64)
-)
 
+    /// A symbol
+    Symbol(SharedString),
+
+    /// A number
+    Number(i64)
+}
 
 impl fmt::Show for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

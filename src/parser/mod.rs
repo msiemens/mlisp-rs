@@ -1,15 +1,19 @@
+//! The Parser
+// TODO: Don't panic on errors but return Error
+
 use std::collections::DList;
 use parser::ast::{Expr, ExprNode};
 use parser::tokens::{Token, SourceLocation};
 use parser::lexer::{Lexer, FileLexer};
 use parser::util::fatal;
 
-mod util;
-mod tokens;
+pub mod util;
+pub mod tokens;
 pub mod ast;
-mod lexer;
+pub mod lexer;
 
 
+/// Lispy Parser
 pub struct Parser<'a> {
     location: SourceLocation,
     token: Token,
@@ -18,6 +22,7 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+
     pub fn new(source: &'a str, file: &'a str) -> Parser<'a> {
         Parser::with_lexer(box FileLexer::new(source, file))
     }
@@ -33,11 +38,14 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // --- Internal methods -----------------------------------------------------
 
+    /// Abort execution with a fatal error
     fn fatal(&self, msg: String) -> ! {
         fatal(msg, &self.location);
     }
 
+    /// Abort execution because an unexpected token has been visited
     fn unexpected_token(&self, tok: &Token, expected: Option<&'static str>) -> ! {
         match expected {
             Some(ex) => self.fatal(format!("unexpected token: `{}`, expected {}", tok, ex)),
@@ -45,6 +53,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Move on to the next token
     fn bump(&mut self) {
         self.token = match self.buffer.pop_front() {
             Some(tok) => tok,
@@ -52,37 +61,24 @@ impl<'a> Parser<'a> {
         };
     }
 
+    /// Update the current source location
     fn update_location(&mut self) -> SourceLocation {
         self.location = self.lexer.get_source();
         self.location.clone()
     }
 
-    fn eat(&mut self, tok: &Token) -> bool {
+    /// Expect the current token to be `tok` and continue or fail
+    fn expect(&mut self, tok: &Token) {
         if self.token == *tok {
             self.bump();
-            true
         } else {
-            false
-        }
-    }
-
-    fn expect(&mut self, tok: &Token) {
-        if !self.eat(tok) {
             self.fatal(format!("expected `{}`, found `{}`", tok, self.token))
         }
     }
 
-    pub fn look_ahead<R>(&mut self, distance: uint, f: |&Token| -> R) -> R {
-        if self.buffer.len() < distance {
-            for _ in range(0, distance - self.buffer.len()) {
-                self.buffer.push_back(self.lexer.next_token());
-            }
-        }
+    // --- Public methods -------------------------------------------------------
 
-        f(self.buffer.iter().nth(distance - 1).unwrap())
-    }
-
-
+    /// Parse all the input
     pub fn parse(&mut self) -> ExprNode {
         let location = self.update_location();
         let mut values = vec![];
@@ -104,6 +100,7 @@ impl<'a> Parser<'a> {
     }
 
 
+    /// Parse a number
     fn parse_number(&mut self) -> ExprNode {
         let location = self.update_location();
 
@@ -116,6 +113,7 @@ impl<'a> Parser<'a> {
         ExprNode::new(number, location)
     }
 
+    /// Parse a symbol
     fn parse_symbol(&mut self) -> ExprNode {
         let location = self.update_location();
 
@@ -128,6 +126,7 @@ impl<'a> Parser<'a> {
         ExprNode::new(symbol, location)
     }
 
+    /// Parse a SExpr
     fn parse_sexpr(&mut self) -> ExprNode {
         let location = self.update_location();
 
@@ -143,6 +142,7 @@ impl<'a> Parser<'a> {
         ExprNode::new(Expr::SExpr(exprs), location)
     }
 
+    /// Parse a single expression
     fn parse_expr(&mut self) -> ExprNode {
         let stmt = match self.token {
             Token::INTEGER(_) => self.parse_number(),

@@ -1,7 +1,11 @@
+//! Tokens
+
 use std::fmt;
 use parser::util::{rcstr, SharedString};
 
+// --- Token --------------------------------------------------------------------
 
+/// A token
 #[deriving(Clone, PartialEq, Eq)]
 pub enum Token {
     LPAREN,
@@ -30,6 +34,9 @@ impl fmt::Show for Token {
 }
 
 
+// --- Source location ----------------------------------------------------------
+
+/// Represntation of a location in the input
 #[deriving(PartialEq, Eq, Clone)]
 pub struct SourceLocation {
     pub filename: SharedString,
@@ -42,6 +49,8 @@ impl fmt::Show for SourceLocation {
     }
 }
 
+
+/// A dummy source location
 pub fn dummy_source() -> SourceLocation {
     SourceLocation {
         filename: rcstr("<input>"),

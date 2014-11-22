@@ -1,15 +1,23 @@
+//! Input tokenizer
+
 use std::rc::Rc;
 use parser::tokens::{Token, SourceLocation, dummy_source};
 use parser::util::{SharedString, rcstr, rcstring, fatal};
 
 
 pub trait Lexer {
+    /// Get the source of the current token
     fn get_source(&self) -> SourceLocation;
+
+    /// Get the next token
     fn next_token(&mut self) -> Token;
+
+    /// Tokenize the input into a vector
     fn tokenize(&mut self) -> Vec<Token>;
 }
 
 
+/// Lexer for tokenize a file from disk/memory.
 pub struct FileLexer<'a> {
     source: &'a str,
     file: SharedString,
@@ -31,16 +39,22 @@ impl<'a> FileLexer<'a> {
         }
     }
 
+    // --- Internal methods -----------------------------------------------------
 
+    /// Abort execution with a fatal error
     fn fatal(&self, msg: String) -> ! {
         fatal(msg, &self.get_source())
     }
 
 
+    /// --- Internal methods: Helpers -------------------------------------------
+
+    /// Whether we've reached EOF
     fn is_eof(&self) -> bool {
         self.curr.is_none()
     }
 
+    /// Move on to the next char
     fn bump(&mut self) {
         self.curr = self.nextch();
         self.pos += 1;
@@ -48,6 +62,7 @@ impl<'a> FileLexer<'a> {
         debug!("Moved on to {}", self.curr)
     }
 
+    /// Get the next char if possible
     fn nextch(&self) -> Option<char> {
         let mut new_pos = self.pos + 1;
         // When encountering multi-byte UTF-8, we may stop in the middle
@@ -63,10 +78,6 @@ impl<'a> FileLexer<'a> {
             None
         }
     }
-
-    //fn nextch_is(&self, c: char) -> bool {
-    //    self.nextch() == Some(c)
-    //}
 
     //fn expect(&mut self, expect: char) {
     //    if self.curr != Some(expect) {
@@ -86,16 +97,17 @@ impl<'a> FileLexer<'a> {
     //   self.bump();
     //}
 
-    //fn curr_repr(&self) -> SharedString {
-    //    match self.curr {
-    //        Some(c) => {
-    //            let mut repr = vec![];
-    //            c.escape_default(|r| repr.push(r));
-    //            Rc::new(String::from_chars(repr[]))
-    //        },
-    //        None => rcstr("EOF")
-    //    }
-    //}
+    /// Get a printable representation of the current char
+    fn curr_repr(&self) -> SharedString {
+        match self.curr {
+            Some(c) => {
+                let mut repr = vec![];
+                c.escape_default(|r| repr.push(r));
+                Rc::new(String::from_chars(repr[]))
+            },
+            None => rcstr("EOF")
+        }
+    }
 
 
     /// Collect a series of chars starting at the current character
@@ -124,7 +136,9 @@ impl<'a> FileLexer<'a> {
     //    }
     //}
 
+    // --- Internal methods: Tokenizers -----------------------------------------
 
+    /// Tokenize a number
     fn tokenize_number(&mut self) -> Token {
         let sign = if self.curr == Some('-') {
             self.bump();
@@ -179,7 +193,7 @@ impl<'a> FileLexer<'a> {
                 return None;
             },
             c => {
-                self.fatal(format!("unknown token: {}", c))
+                self.fatal(format!("unknown token: {}", self.curr_repr()))
                 // UNKNOWN(format!("{}", c).into_string())
             }
         };

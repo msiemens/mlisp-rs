@@ -1,12 +1,15 @@
 #![feature(macro_rules, slicing_syntax, while_let, if_let, phase, globs)]
 
+//! Lispy-rs
+
 extern crate term;
 #[phase(plugin, link)] extern crate log;
 
 use lval::LVal;
 
-mod parser;
-mod lval;
+// FIXME(#18822): Remove `pub`
+pub mod parser;
+pub mod lval;
 
 
 fn main() {
