@@ -18,7 +18,15 @@ mod main {
     use term;
 
     use lval::LVal;
-    use parser::Parser;
+    use parser::{Parser, ParserError};
+
+    fn print_error(err: ParserError) {
+        let mut t = term::stdout().unwrap();
+        t.fg(term::color::RED).unwrap();
+        (write!(t, "Error: ")).unwrap();
+        t.reset().unwrap();
+        (write!(t, "{}\n", err)).unwrap();
+    }
 
     pub fn main() {
         println!("MLisp VErsion 0.0.0.1");
@@ -31,15 +39,7 @@ mod main {
 
             let ast = match Parser::parse(input[], "<input>") {
                 Ok(lval) => lval,
-                Err(err) => {
-                    let mut t = term::stdout().unwrap();
-                    t.fg(term::color::RED).unwrap();
-                    (write!(t, "Error: ")).unwrap();
-                    t.reset().unwrap();
-                    (write!(t, "{}\n", err)).unwrap();
-
-                    continue
-                }
+                Err(err) => { print_error(err); continue }
             };
             let lval = LVal::from_ast(ast);
 
