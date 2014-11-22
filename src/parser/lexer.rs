@@ -82,7 +82,7 @@ impl<'a> FileLexer<'a> {
             file: rcstr(file),
             len: source.len(),
             pos: 0,
-            curr: Some(source.char_at(0)),
+            curr: if source.len() > 0 { Some(source.char_at(0)) } else { None },
             lineno: 1
         }
     }
