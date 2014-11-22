@@ -12,9 +12,11 @@ pub mod lval;
 
 #[cfg(not(test))]
 mod main {
+    use std;
     use lval::LVal;
+    use parser::Parser;
 
-    fn main() {
+    pub fn main() {
         println!("MLisp VErsion 0.0.0.1");
         println!("Press Ctrl+c to exit");
 
@@ -26,7 +28,7 @@ mod main {
                 break
             }
 
-            let ast = parser::Parser::new(input[], "<input>").parse();
+            let ast = Parser::new(input[], "<input>").parse();
             let lval = LVal::from_ast(ast);
 
             println!("{}", lval);
