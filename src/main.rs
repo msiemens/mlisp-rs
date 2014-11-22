@@ -31,13 +31,16 @@ mod main {
     }
 
     pub fn main() {
-        println!("MLisp VErsion 0.0.0.1");
-        println!("Press Ctrl+c to exit");
+        println!("MLisp Version 0.0.0.1");
+        println!("Enter 'quit' to exit");
+        println!("");
 
         loop {
-            let input = if let Some(i) = readline::readline("mlisp> ") { i }
+            let input = if let Some(i) = readline::readline("> ") { i }
                         else { println!(""); break };
             readline::add_history(input[]);
+
+            if input[] == "quit" { break }
 
             let ast = match Parser::parse(input[], "<input>") {
                 Ok(lval) => lval,
