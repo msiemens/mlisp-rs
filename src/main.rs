@@ -17,10 +17,15 @@ fn main() {
         print!("mlisp> ");
 
         let input = std::io::stdin().read_line().unwrap();
-        let ast = parser::Parser::new(input[], "<input>").parse();
+        if input.as_bytes()[0] == 4 {
+            break
+        }
 
+        let ast = parser::Parser::new(input[], "<input>").parse();
         let lval = LVal::from_ast(ast);
 
-        lval.println();
+        println!("{}", lval);
     }
+
+    println!("Exiting...")
 }
