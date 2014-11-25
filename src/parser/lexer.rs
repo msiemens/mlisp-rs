@@ -141,8 +141,7 @@ impl<'a> FileLexer<'a> {
     fn curr_repr(&self) -> SharedString {
         match self.curr {
             Some(c) => {
-                let mut repr = vec![];
-                c.escape_default(|r| repr.push(r));
+                let repr: Vec<_> = c.escape_default().collect();
                 Rc::new(String::from_chars(repr[]))
             },
             None => rcstr("EOF")
@@ -186,7 +185,7 @@ impl<'a> FileLexer<'a> {
         } else {
             1
         };
-        let integer = self.collect(|c| c.is_digit());
+        let integer = self.collect(|c| c.is_numeric());
 
         let integer = if let Some(m) = from_str(integer[]) { m }
                       else { invalid_integer!(integer @ self.get_source()) };
@@ -209,7 +208,7 @@ impl<'a> FileLexer<'a> {
         };
 
         let token = match c {
-            c if c.is_digit() => {
+            c if c.is_numeric() => {
                 try!(self.tokenize_number())
             },
             c if c.is_alphanumeric() || c == '_' => {
@@ -217,7 +216,7 @@ impl<'a> FileLexer<'a> {
             },
             '+' | '-' | '*' | '/' | '%' => {
                 let is_num = c == '-' && match self.nextch() {
-                    Some(c) => c.is_digit(),
+                    Some(c) => c.is_numeric(),
                     None => false
                 };
 
