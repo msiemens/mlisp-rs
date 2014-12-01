@@ -230,6 +230,8 @@ impl<'a> FileLexer<'a> {
             },
             '(' => { self.bump(); Token::LPAREN },
             ')' => { self.bump(); Token::RPAREN },
+            '{' => { self.bump(); Token::LBRACE },
+            '}' => { self.bump(); Token::RBRACE },
 
             c if c.is_whitespace() => {
                 if c == '\n' { self.lineno += 1; }

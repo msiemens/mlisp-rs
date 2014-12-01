@@ -10,6 +10,8 @@ use parser::util::{rcstr, SharedString};
 pub enum Token {
     LPAREN,
     RPAREN,
+    LBRACE,
+    RBRACE,
 
     SYMBOL(SharedString),
     INTEGER(i64),
@@ -23,6 +25,8 @@ impl fmt::Show for Token {
         match *self {
             Token::LPAREN        => write!(f, "("),
             Token::RPAREN        => write!(f, ")"),
+            Token::LBRACE        => write!(f, "{{"),
+            Token::RBRACE        => write!(f, "}}"),
 
             Token::SYMBOL(ref s) => write!(f, "{}", s),
             Token::INTEGER(i)    => write!(f, "{}", i),

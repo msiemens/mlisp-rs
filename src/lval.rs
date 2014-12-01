@@ -2,7 +2,6 @@
 
 //! LVal: The basic object type
 
-use std;
 use std::fmt;
 use parser::ast::{Expr, ExprNode};
 use util::print_error;
@@ -20,31 +19,14 @@ macro_rules! err(
 )
 
 
-// Tricking the compiler into thinking that floats are Eq...
-// Fixme: Better solution?
-#[deriving(PartialEq)]
-pub struct Float(f64);
-
-impl std::cmp::Eq for Float {
-    #[inline]
-    fn assert_receiver_is_total_eq(&self) {}
-}
-
-impl fmt::Show for Float {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let Float(value) = *self;
-        write!(f, "{}", value)
-    }
-}
-
-
 /// A basic object
-#[deriving(Eq, PartialEq)]
+#[deriving(PartialEq)]
 pub enum LVal {
-    Num(Float),
+    Num(f64),
     Err(String),
     Sym(String),
-    SExpr(Vec<LVal>)
+    SExpr(Vec<LVal>),
+    QExpr(Vec<LVal>)
 }
 
 impl LVal {
@@ -53,7 +35,7 @@ impl LVal {
 
     /// Create a new number lval
     pub fn num(value: f64) -> LVal {
-        LVal::Num(Float(value))
+        LVal::Num(value)
     }
 
     /// Create a new error lval
@@ -71,6 +53,11 @@ impl LVal {
         LVal::SExpr(vec![])
     }
 
+    /// Create a new sepxr lval
+    pub fn qexpr() -> LVal {
+        LVal::QExpr(vec![])
+    }
+
     /// Construct a lval from a given AST
     pub fn from_ast(ast: ExprNode) -> LVal {
         match ast.value {
@@ -83,23 +70,64 @@ impl LVal {
                 }
 
                 sexpr
+            },
+            Expr::QExpr(exprs) => {
+                let mut qexpr = LVal::qexpr();
+                for child in exprs.into_iter() {
+                    qexpr.append(LVal::from_ast(child));
+                }
+
+                qexpr
             }
         }
     }
 
-    // --- Public methods -------------------------------------------------------
+    // --- Public methods: Conversions ------------------------------------------
+
+    pub fn as_values(&self) -> &Vec<LVal> {
+        if let &LVal::SExpr(ref values) = self {
+            values
+        } else if let &LVal::QExpr(ref values) = self {
+            values
+        } else {
+            panic!("LVal::as_sexpr(self={})", self);
+        }
+    }
+
+    pub fn into_values(self) -> Vec<LVal> {
+        if let LVal::SExpr(values) = self {
+            values
+        } else if let LVal::QExpr(values) = self {
+            values
+        } else {
+            panic!("LVal::as_sexpr(self={})", self);
+        }
+    }
+
+    pub fn as_num(&mut self) -> &mut f64 {
+        if let &LVal::Num(ref mut float) = self {
+            //let Float(ref mut i) = float;
+            //return i
+            return float
+        } else {
+            panic!("LVal::as_num(self={})", self)
+        }
+    }
+
+    pub fn into_num(self) -> f64 {
+        if let LVal::Num(float) = self {
+            //let Float(ref mut i) = float;
+            //return i
+            return float
+        } else {
+            panic!("LVal::into_num(self={})", self)
+        }
+    }
+
+    // --- Public methods: Other functions --------------------------------------
 
     /// Delete a lval
     pub fn del(self) {}
-
-    pub fn get_num(&self) -> f64 {
-        if let LVal::Num(i) = *self {
-            let Float(i) = i;
-            return i
-        } else {
-            panic!("Cannot get number of non-number: {}", self)
-        }
-    }
 
     /// Append a lval to a sexpr
     ///
@@ -107,8 +135,30 @@ impl LVal {
     pub fn append(&mut self, expr: LVal) {
         if let LVal::SExpr(ref mut values) = *self {
             values.push(expr);
+        } else if let LVal::QExpr(ref mut values) = *self {
+            values.push(expr);
         } else {
-            panic!("cannot extend a non-sexpr")
+            panic!("LVal::append(self={}, expr={})", self, expr);
+        }
+    }
+
+    pub fn extend(&mut self, container: LVal) {
+        if let LVal::SExpr(ref mut values) = *self {
+            values.extend(container.into_values().into_iter());
+        } else if let LVal::QExpr(ref mut values) = *self {
+            values.extend(container.into_values().into_iter());
+        } else {
+            panic!("LVal::extend(self={}, expr={})", self, container);
+        }
+    }
+
+    pub fn type_name(&self) -> &'static str {
+        match *self {
+            LVal::Num(..)   => "number",
+            LVal::Err(..)   => "error",
+            LVal::Sym(..)   => "symbol",
+            LVal::SExpr(..) => "s-expression",
+            LVal::QExpr(..) => "q-expression",
         }
     }
 }
@@ -117,11 +167,17 @@ impl LVal {
 impl fmt::Show for LVal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            LVal::Num(i)          => write!(f, "{}", i),
-            LVal::Err(ref msg)    => { print_error(msg[]); Ok(()) },
-            LVal::Sym(ref symbol) => write!(f, "{}", symbol),
+            LVal::Num(i)            => write!(f, "{}", i),
+            LVal::Err(ref msg)      => { print_error(msg[]); Ok(()) },
+            LVal::Sym(ref symbol)   => write!(f, "{}", symbol),
             LVal::SExpr(ref values) => {
                 write!(f, "({})", values.iter()
+                                        .map(|v| format!("{}", v))
+                                        .collect::<Vec<_>>()
+                                        .connect(" "))
+            },
+            LVal::QExpr(ref values) => {
+                write!(f, "{{{}}}", values.iter()
                                         .map(|v| format!("{}", v))
                                         .collect::<Vec<_>>()
                                         .connect(" "))

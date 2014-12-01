@@ -201,12 +201,33 @@ impl<'a> Parser<'a> {
         Ok(ExprNode::new(Expr::SExpr(exprs), location))
     }
 
+    /// Parse a QExpr
+    fn parse_qexpr(&mut self) -> ParserResult<ExprNode> {
+        let location = self.update_location();
+
+        try!(self.expect(&Token::LBRACE));
+
+        let mut exprs = vec![];
+        while self.token != Token::RBRACE {
+            let expr = match self.parse_expr() {
+                Ok(expr) => expr,
+                Err(err) => return Err(err)
+            };
+            exprs.push(expr);
+        }
+
+        try!(self.expect(&Token::RBRACE));
+
+        Ok(ExprNode::new(Expr::QExpr(exprs), location))
+    }
+
     /// Parse a single expression
     fn parse_expr(&mut self) -> ParserResult<ExprNode> {
         let stmt = match self.token {
             Token::INTEGER(_) => try!(self.parse_number()),
             Token::SYMBOL(_)  => try!(self.parse_symbol()),
             Token::LPAREN     => try!(self.parse_sexpr()),
+            Token::LBRACE     => try!(self.parse_qexpr()),
 
             _ => unexpected!(self.token instead of "an expression" @ self.location.clone())
         };

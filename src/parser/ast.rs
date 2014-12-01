@@ -39,6 +39,9 @@ pub enum Expr {
     /// A SExpr
     SExpr(Vec<ExprNode>),
 
+    /// A QExpr
+    QExpr(Vec<ExprNode>),
+
     /// A symbol
     Symbol(SharedString),
 
@@ -53,6 +56,12 @@ impl fmt::Show for Expr {
             Expr::Symbol(ref token) => write!(f, "{}", token),
             Expr::SExpr(ref values) => {
                 write!(f, "({})", values.iter()
+                                        .map(|v| format!("{}", v))
+                                        .collect::<Vec<_>>()
+                                        .connect(" "))
+            },
+            Expr::QExpr(ref values) => {
+                write!(f, "{{{}}}", values.iter()
                                         .map(|v| format!("{}", v))
                                         .collect::<Vec<_>>()
                                         .connect(" "))

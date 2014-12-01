@@ -1,12 +1,12 @@
 use lval::LVal;
-use builtin::builtin_op;
+use builtin::builtin;
 
 
 /// Evaluate a calculation
 pub fn eval(node: LVal) -> LVal {
     match node {
         LVal::SExpr(_) => eval_sexpr(node),
-        n => n
+        node => node
     }
 }
 
@@ -44,7 +44,7 @@ fn eval_sexpr(node: LVal) -> LVal {
     };
 
     // Call with builtin operator
-    builtin_op(f, values)
+    builtin(f, LVal::SExpr(values))
 }
 
 
