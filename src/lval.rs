@@ -3,6 +3,7 @@
 //! LVal: The basic object type
 
 use std::fmt;
+use lenv::LEnv;
 use parser::ast::{Expr, ExprNode};
 use util::print_error;
 
@@ -19,12 +20,19 @@ macro_rules! err(
 )
 
 
+pub type LBuiltin = fn(&mut LEnv, LVal) -> LVal;
+
+
 /// A basic object
-#[deriving(PartialEq)]
+// TODO: Store source location of this LVal?
+
+#[allow(raw_pointer_deriving)]
+#[deriving(PartialEq, Clone)]
 pub enum LVal {
     Num(f64),
     Err(String),
     Sym(String),
+    Builtin(*const ()),
     SExpr(Vec<LVal>),
     QExpr(Vec<LVal>)
 }
@@ -46,6 +54,15 @@ impl LVal {
     /// Create a new symbol lval
     pub fn sym(symbol: &str) -> LVal {
         LVal::Sym(symbol.into_string())
+    }
+
+    /// Create a new function lval
+    pub fn func(f: LBuiltin) -> LVal {
+        /*unsafe {
+            println!("p(): {}", mem::transmute::<_, fn(LVal) -> LVal>(p)(LVal::qexpr()))
+        }*/
+
+        LVal::Builtin(f as *const ())
     }
 
     /// Create a new sepxr lval
@@ -123,6 +140,13 @@ impl LVal {
             panic!("LVal::into_num(self={})", self)
         }
     }
+    pub fn as_sym(&mut self) -> &mut String {
+        if let &LVal::Sym(ref mut value) = self {
+            return value
+        } else {
+            panic!("LVal::as_sym(self={})", self)
+        }
+    }
 
     // --- Public methods: Other functions --------------------------------------
 
@@ -154,11 +178,12 @@ impl LVal {
 
     pub fn type_name(&self) -> &'static str {
         match *self {
-            LVal::Num(..)   => "number",
-            LVal::Err(..)   => "error",
-            LVal::Sym(..)   => "symbol",
-            LVal::SExpr(..) => "s-expression",
-            LVal::QExpr(..) => "q-expression",
+            LVal::Num(..)     => "number",
+            LVal::Err(..)     => "error",
+            LVal::Sym(..)     => "symbol",
+            LVal::Builtin(..) => "builtin function",
+            LVal::SExpr(..)   => "s-expression",
+            LVal::QExpr(..)   => "q-expression",
         }
     }
 }
@@ -170,6 +195,8 @@ impl fmt::Show for LVal {
             LVal::Num(i)            => write!(f, "{}", i),
             LVal::Err(ref msg)      => { print_error(msg[]); Ok(()) },
             LVal::Sym(ref symbol)   => write!(f, "{}", symbol),
+            // TODO: Find a smart way to print the function name
+            LVal::Builtin(..)       => write!(f, "<function>"),
             LVal::SExpr(ref values) => {
                 write!(f, "({})", values.iter()
                                         .map(|v| format!("{}", v))

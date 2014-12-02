@@ -5,10 +5,6 @@
     number  : (<minus> [0-9]+ | [0-9]+)
 
     # Tokens
-    symbol  : <plus> | <minus> | <mul> | <div> | [a-zA-Z_]
+    symbol  : [+-*/%a-zA-Z_\=<>!?&`]
     lparen  : '('
     rparen  : ')'
-    plus    : '+'
-    minus   : '-'
-    mul     : '*'
-    dif     : '/'

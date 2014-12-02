@@ -1,15 +1,23 @@
-#![feature(macro_rules, slicing_syntax, while_let, if_let, phase, globs)]
+#![feature(macro_rules)]
+#![feature(slicing_syntax)]
+#![feature(while_let)]
+#![feature(if_let)]
+#![feature(phase)]
+#![feature(globs)]
+#![feature(unboxed_closures)]
 
 //! Lispy-rs
 
 #[phase(plugin, link)] extern crate log;
 extern crate term;
+extern crate libc;
 
 extern crate readline;
 
 // FIXME(#18822): Remove `pub`
 pub mod parser;
 pub mod lval;
+pub mod lenv;
 pub mod eval;
 pub mod builtin;
 pub mod util;
@@ -22,9 +30,14 @@ mod main {
     use util::print_error;
     use eval::eval;
     use lval::LVal;
+    use lenv::LEnv;
     use parser::Parser;
+    use builtin;
 
     pub fn main() {
+        let mut env = LEnv::new();
+        builtin::initialize(&mut env);
+
         println!("MLisp Version 0.0.0.1");
         println!("Enter 'quit' to exit");
         println!("");
@@ -42,7 +55,7 @@ mod main {
             };
             let lval = LVal::from_ast(ast);
 
-            println!("{}", eval(lval));
+            println!("{}", eval(&mut env, lval));
         }
 
         println!("Exiting...")

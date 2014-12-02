@@ -3,9 +3,10 @@
 use std;
 use std::rc::Rc;
 use parser::tokens::{Token, SourceLocation, dummy_source};
-use parser::util::{SharedString, rcstr, rcstring};
+use parser::util::{SharedString, rcstr};
 
 // --- Lexer: Error -------------------------------------------------------------
+const SYMBOL_CHARS: &'static str = "+-*/%\\=<>!?&_#$§^`";
 
 pub type LexerResult<T> = Result<T, LexerError>;
 
@@ -195,7 +196,9 @@ impl<'a> FileLexer<'a> {
 
     /// Tokenize a symbol
     fn tokenize_symbol(&mut self) -> LexerResult<Token> {
-        let symbol = self.collect(|c| c.is_alphanumeric() || *c == '_');
+        let symbol = self.collect(|c| {
+            c.is_alphanumeric() || SYMBOL_CHARS.contains_char(*c)
+        });
         Ok(Token::SYMBOL(symbol))
     }
 
@@ -211,10 +214,10 @@ impl<'a> FileLexer<'a> {
             c if c.is_numeric() => {
                 try!(self.tokenize_number())
             },
-            c if c.is_alphanumeric() || c == '_' => {
+            c if c.is_alphanumeric() || SYMBOL_CHARS.contains_char(c) => {
                 try!(self.tokenize_symbol())
             },
-            '+' | '-' | '*' | '/' | '%' => {
+            /*'+' | '-' | '*' | '/' | '%' => {
                 let is_num = c == '-' && match self.nextch() {
                     Some(c) => c.is_numeric(),
                     None => false
@@ -227,7 +230,7 @@ impl<'a> FileLexer<'a> {
                     self.bump();
                     Token::SYMBOL(rcstring(String::from_chars(&[c])))
                 }
-            },
+            },*/
             '(' => { self.bump(); Token::LPAREN },
             ')' => { self.bump(); Token::RPAREN },
             '{' => { self.bump(); Token::LBRACE },
@@ -342,11 +345,11 @@ mod tests {
                    vec![INTEGER(123)]);
     }
 
-    #[test]
+    /*#[test]
     fn test_number_neg() {
         assert_eq!(tokenize("-123"),
                    vec![INTEGER(-123)]);
-    }
+    }*/
 
     #[test]
     fn test_parens() {

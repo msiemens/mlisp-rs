@@ -1,17 +1,19 @@
-use lval::LVal;
-use builtin::builtin;
+use std::mem;
+use lval::{LVal, LBuiltin};
+use lenv::LEnv;
 
 
 /// Evaluate a calculation
-pub fn eval(node: LVal) -> LVal {
+pub fn eval(env: &mut LEnv, node: LVal) -> LVal {
     match node {
-        LVal::SExpr(_) => eval_sexpr(node),
+        LVal::SExpr(_) => eval_sexpr(env, node),
+        LVal::Sym(ref name) => env.get(name[]),
         node => node
     }
 }
 
 /// Evaluate a SExpression
-fn eval_sexpr(node: LVal) -> LVal {
+fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
     let values = match node {
         LVal::SExpr(values) => values,
         _ => panic!("eval_sexpr got a non-sexpr: {}", node)
@@ -19,10 +21,10 @@ fn eval_sexpr(node: LVal) -> LVal {
 
     // Evaluate values & check for errors
     let mut values: Vec<LVal> = values.into_iter()
-        .map(|v| {
-            match eval(v) {
+        .map(|val| {
+            match eval(env, val) {
                 LVal::Err(msg) => return LVal::err(msg),
-                v => v
+                val => val
             }
         })
         .collect();
@@ -39,12 +41,20 @@ fn eval_sexpr(node: LVal) -> LVal {
 
     // Ensure first element is a symbol
     let f = match values.remove(0).unwrap() {
-        LVal::Sym(s) => s,
-        _ => err!("S-Expression doesn't start with symbol")
+        LVal::Builtin(f) => f,
+        LVal::Sym(ref name) => {
+            // FIXME: Why is this needed? Why may a symbol not be already evaluated?
+            if let LVal::Builtin(f) = env.get(name[]) { f }
+               else { err!("first element is not a function") }  // TODO: print it!
+        },
+        _ => err!("first element is not a function")  // TODO: print it!
     };
 
     // Call with builtin operator
-    builtin(f, LVal::SExpr(values))
+    unsafe {
+        let f = mem::transmute::<_, LBuiltin>(f);
+        f(env, LVal::SExpr(values))
+    }
 }
 
 

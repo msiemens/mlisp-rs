@@ -1,5 +1,8 @@
+use std::fmt;
 use lval::LVal;
+use lenv::LEnv;
 use eval::eval;
+
 
 macro_rules! builtin_assert(
 
@@ -28,12 +31,12 @@ macro_rules! builtin_assert(
     };
 
     // FIXME: Find a solution without typ_name
-    ($func:expr: ASSERT TYPE: $element:expr, $typ:pat $typ_name:expr) => {
+    ($func:expr: ASSERT TYPE: $element:expr, $pos:expr, $typ:pat $typ_name:expr) => {
         match $element {
             $typ => {},
             _ => {
-                err!("`{}` called with wrong argument type: expected {}, got {}",
-                            $func, $typ_name, $element.type_name())
+                err!("`{}` called with wrong type for argument {}: expected {}, got {}",
+                            $func, $pos + 1, $typ_name, $element.type_name())
             }
         }
     };
@@ -52,15 +55,15 @@ macro_rules! builtin_assert(
         builtin_assert!($func: ASSERT LENGTH LE, $args.len(), $expected)
     };
 
-    ($func:expr: $args:ident * is $typ:pat $typ_name:expr) => {
-        for arg in $args.iter() {
-            builtin_assert!($func: ASSERT TYPE: arg, &$typ $typ_name);
+    ($func:expr: $args:ident [*] is $typ:pat $typ_name:expr) => {
+        for (i, arg) in $args.iter().enumerate() {
+            builtin_assert!($func: ASSERT TYPE: arg, i, &$typ $typ_name);
         }
     };
 
     ($func:expr: $args:ident [ $i:expr ] != {}) => {
         {
-            builtin_assert!($func: ASSERT TYPE: $args[$i], LVal::QExpr(_) "q-expr");
+            builtin_assert!($func: ASSERT TYPE: $args[$i], $i, LVal::QExpr(_) "q-expr");
             if $args[$i].as_values().len() == 0 {
                 err!("`{}` called with empty q-expr", $func)
             }
@@ -68,36 +71,71 @@ macro_rules! builtin_assert(
     };
 
     ($func:expr: $args:ident [ $i:expr ] is $typ:pat $typ_name:expr) => {
-        builtin_assert!($func: ASSERT TYPE: $args[$i], $typ $typ_name);
+        builtin_assert!($func: ASSERT TYPE: $args[$i], $i, $typ $typ_name);
     };
 )
 
 
-pub fn builtin(op: String, args: LVal) -> LVal {
-    match &*op {
-        "head" => builtin_head(args),
-        "tail" => builtin_tail(args),
-        "list" => builtin_list(args),
-        "eval" => builtin_eval(args),
-        "join" => builtin_join(args),
-        "cons" => builtin_cons(args),
-        "+" | "-" | "*" | "/" | "%" => builtin_op(op, args),
-        _ => err!("unknown function: {}", op)
+pub fn initialize(env: &mut LEnv) {
+    env.put(LVal::sym("def"), LVal::func(builtin_def));
+    env.put(LVal::sym("eval"), LVal::func(builtin_eval));
+
+    // Lists
+    env.put(LVal::sym("head"), LVal::func(builtin_head));
+    env.put(LVal::sym("tail"), LVal::func(builtin_tail));
+    env.put(LVal::sym("list"), LVal::func(builtin_list));
+    env.put(LVal::sym("join"), LVal::func(builtin_join));
+    env.put(LVal::sym("cons"), LVal::func(builtin_cons));
+
+    // Math
+    env.put(LVal::sym("+"), LVal::func(builtin_add));
+    env.put(LVal::sym("-"), LVal::func(builtin_sub));
+    env.put(LVal::sym("*"), LVal::func(builtin_mul));
+    env.put(LVal::sym("/"), LVal::func(builtin_div));
+    env.put(LVal::sym("%"), LVal::func(builtin_mod));
+    env.put(LVal::sym("min"), LVal::func(builtin_min));
+    env.put(LVal::sym("max"), LVal::func(builtin_max));
+}
+
+
+// --- Functions: Math ----------------------------------------------------------
+
+#[deriving(PartialEq)]
+enum ArithmeticOp {
+    ADD, SUB, MUL, DIV, MOD,
+    MIN, MAX
+}
+
+impl fmt::Show for ArithmeticOp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ArithmeticOp::*;
+
+        match *self {
+            ADD => write!(f, "{}", "+"),
+            SUB => write!(f, "{}", "-"),
+            MUL => write!(f, "{}", "*"),
+            DIV => write!(f, "{}", "/"),
+            MOD => write!(f, "{}", "%"),
+            MIN => write!(f, "{}", "min"),
+            MAX => write!(f, "{}", "max")
+        }
     }
 }
 
 
-fn builtin_op(op: String, args: LVal) -> LVal {
+fn builtin_op(op: ArithmeticOp, args: LVal) -> LVal {
+    use self::ArithmeticOp::*;
+
     let mut args = args.into_values();
 
     // Make sure all arguments are numbers
-    builtin_assert!(op: args* is LVal::Num(_) "number");
+    builtin_assert!(op: args[*] is LVal::Num(_) "number");
     builtin_assert!(op: args.len() >= 1u);
 
     let mut x = args.remove(0).unwrap().into_num();
 
     // Perform unary minus operation
-    if &*op == "-" && args.len() == 0 {
+    if op == SUB && args.len() == 0 {
         return LVal::num(-1.0 * x)
     }
 
@@ -106,21 +144,20 @@ fn builtin_op(op: String, args: LVal) -> LVal {
     for arg in args.into_iter() {
         let y = arg.into_num();
 
-        x = match &*op {
-            "+" => x + y,
-            "-" => x - y,
-            "*" => x * y,
-            "/" => {
+        x = match op {
+            ADD => x + y,
+            SUB => x - y,
+            MUL => x * y,
+            DIV => {
                 if y == 0.0 { err!("division by zero!") }
                 x / y
             },
-            "%" => {
+            MOD => {
                 if y == 0.0 { err!("division by zero!") }
                 x % y
             },
-            "min" => if x > y { y } else { x },
-            "max" => if x > y { x } else { y },
-            _ => err!("invalid operator: {}", op)
+            MIN => if x > y { y } else { x },
+            MAX => if x > y { x } else { y }
         };
     }
 
@@ -128,11 +165,56 @@ fn builtin_op(op: String, args: LVal) -> LVal {
 }
 
 
-fn builtin_head(arg: LVal) -> LVal {
+#[allow(unused_variables)]
+fn builtin_add(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_op(ArithmeticOp::ADD, arg)
+}
+
+
+#[allow(unused_variables)]
+fn builtin_sub(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_op(ArithmeticOp::SUB, arg)
+}
+
+
+#[allow(unused_variables)]
+fn builtin_mul(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_op(ArithmeticOp::MUL, arg)
+}
+
+
+#[allow(unused_variables)]
+fn builtin_div(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_op(ArithmeticOp::DIV, arg)
+}
+
+
+#[allow(unused_variables)]
+fn builtin_mod(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_op(ArithmeticOp::MOD, arg)
+}
+
+
+#[allow(unused_variables)]
+fn builtin_min(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_op(ArithmeticOp::MIN, arg)
+}
+
+
+#[allow(unused_variables)]
+fn builtin_max(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_op(ArithmeticOp::MAX, arg)
+}
+
+
+// --- Functions: List ----------------------------------------------------------
+
+#[allow(unused_variables)]
+fn builtin_head(env: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("head": args.len() == 1u);
-    builtin_assert!("head": args[0] != {});
+    builtin_assert!("head": args[0u] != {});
 
     // Take 1st argument
     let mut qexpr = args.remove(0).unwrap().into_values();
@@ -142,11 +224,12 @@ fn builtin_head(arg: LVal) -> LVal {
 }
 
 
-fn builtin_tail(arg: LVal) -> LVal {
+#[allow(unused_variables)]
+fn builtin_tail(env: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("tail": args.len() == 1u);
-    builtin_assert!("tail": args[0] != {});
+    builtin_assert!("tail": args[0u] != {});
 
     // Take 1st argument
     let qexpr = args.remove(0).unwrap();
@@ -157,27 +240,17 @@ fn builtin_tail(arg: LVal) -> LVal {
 }
 
 
-fn builtin_list(arg: LVal) -> LVal {
+#[allow(unused_variables)]
+fn builtin_list(env: &mut LEnv, arg: LVal) -> LVal {
     LVal::QExpr(arg.into_values())
 }
 
 
-fn builtin_eval(arg: LVal) -> LVal {
+#[allow(unused_variables)]
+fn builtin_join(env: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
-    builtin_assert!("eval": args.len() == 1u);
-    builtin_assert!("eval": args[0] is LVal::QExpr(_) "q-expression");
-
-    // Take 1st argument
-    let qexpr = args.remove(0).unwrap();
-    eval(LVal::SExpr(qexpr.into_values()))
-}
-
-
-fn builtin_join(arg: LVal) -> LVal {
-    let mut args = arg.into_values();
-
-    builtin_assert!("join": args* is LVal::QExpr(_) "q-expression");
+    builtin_assert!("join": args[*] is LVal::QExpr(_) "q-expression");
 
     let mut joined = args.remove(0).unwrap();
 
@@ -189,11 +262,12 @@ fn builtin_join(arg: LVal) -> LVal {
 }
 
 
-fn builtin_cons(arg: LVal) -> LVal {
+#[allow(unused_variables)]
+fn builtin_cons(env: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("cons": args.len() == 2u);
-    builtin_assert!("cons": args[1] is LVal::QExpr(_) "q-expression");
+    builtin_assert!("cons": args[1u] is LVal::QExpr(_) "q-expression");
 
     let mut value = LVal::qexpr();
     value.append(args.remove(0).unwrap());
@@ -202,6 +276,49 @@ fn builtin_cons(arg: LVal) -> LVal {
     value
 }
 
+// --- Functions: Environment ---------------------------------------------------
+
+fn builtin_def(env: &mut LEnv, arg: LVal) -> LVal {
+    let mut args = arg.into_values();
+
+    builtin_assert!("eval": args.len() >= 1u);
+    builtin_assert!("eval": args[0u] is LVal::QExpr(_) "q-expression");
+    let symbols = args.remove(0).unwrap().into_values();
+
+    // Ensure all elements of first list are symbols
+    for symbol in symbols.iter() {
+        if let LVal::Sym(_) = *symbol {}
+        else {
+            err!("cannot `def`ine non-symbol: {}", symbol)
+       }
+    }
+
+    // Check that number of symbols and values matches
+    if symbols.len() != args.len() {
+        err!("`def` called with number of symbols ({}) != number of values ({})",
+             symbols.len(), args.len())
+    }
+
+    for (symbol, value) in symbols.iter().zip(args.into_iter()) {
+        env.put(symbol.clone(), value);
+    }
+
+    LVal::sexpr()
+}
+
+fn builtin_eval(env: &mut LEnv, arg: LVal) -> LVal {
+    let mut args = arg.into_values();
+
+    builtin_assert!("eval": args.len() == 1u);
+    builtin_assert!("eval": args[0u] is LVal::QExpr(_) "q-expression");
+
+    // Take 1st argument
+    let qexpr = args.remove(0).unwrap();
+    eval(env, LVal::SExpr(qexpr.into_values()))
+}
+
+
+// --- Tests --------------------------------------------------------------------
 
 #[cfg(test)]
 mod test {
