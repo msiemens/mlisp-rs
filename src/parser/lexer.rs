@@ -142,7 +142,7 @@ impl<'a> FileLexer<'a> {
         match self.curr {
             Some(c) => {
                 let repr: Vec<_> = c.escape_default().collect();
-                Rc::new(String::from_chars(repr[]))
+                Rc::new(String::from_chars(&*repr))
             },
             None => rcstr("EOF")
         }
@@ -165,7 +165,7 @@ impl<'a> FileLexer<'a> {
             }
         }
 
-        Rc::new(String::from_chars(chars[]))
+        Rc::new(String::from_chars(&*chars))
     }
 
     //fn eat_all(&mut self, cond: |&char| -> bool) {

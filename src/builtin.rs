@@ -74,14 +74,14 @@ macro_rules! builtin_assert(
 
 
 pub fn builtin(op: String, args: LVal) -> LVal {
-    match op[] {
+    match &*op {
         "head" => builtin_head(args),
         "tail" => builtin_tail(args),
         "list" => builtin_list(args),
         "eval" => builtin_eval(args),
         "join" => builtin_join(args),
         "cons" => builtin_cons(args),
-        "+" | "-" | "*" | "/" => builtin_op(op, args),
+        "+" | "-" | "*" | "/" | "%" => builtin_op(op, args),
         _ => err!("unknown function: {}", op)
     }
 }
@@ -97,7 +97,7 @@ fn builtin_op(op: String, args: LVal) -> LVal {
     let mut x = args.remove(0).unwrap().into_num();
 
     // Perform unary minus operation
-    if op[] == "-" && args.len() == 0 {
+    if &*op == "-" && args.len() == 0 {
         return LVal::num(-1.0 * x)
     }
 
@@ -106,7 +106,7 @@ fn builtin_op(op: String, args: LVal) -> LVal {
     for arg in args.into_iter() {
         let y = arg.into_num();
 
-        x = match op[] {
+        x = match &*op {
             "+" => x + y,
             "-" => x - y,
             "*" => x * y,
@@ -214,7 +214,7 @@ mod test {
             builtin_op("+".into_string(), LVal::SExpr(vec![
                 LVal::num(2.0)
             ])),
-            LVal::err("too few arguments: `[]`".into_string())
+            LVal::err("`+` called with too few arguments: expected at least 1, got 0".into_string())
         )
     }
 
