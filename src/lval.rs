@@ -2,6 +2,7 @@
 
 //! LVal: The basic object type
 
+use std::mem;
 use std::fmt;
 use lenv::LEnv;
 use parser::ast::{Expr, ExprNode};
@@ -20,19 +21,29 @@ macro_rules! err(
 )
 
 
-pub type LBuiltin = fn(&mut LEnv, LVal) -> LVal;
+#[deriving(Clone)]
+pub struct LBuiltin(pub fn(&mut LEnv, LVal) -> LVal);
+
+impl PartialEq for LBuiltin {
+    fn eq(&self, other: &LBuiltin) -> bool {
+        unsafe {
+            let ptr_self:  *const () = mem::transmute(*self);
+            let ptr_other: *const () = mem::transmute(*other);
+            ptr_self == ptr_other
+        }
+    }
+}
 
 
 /// A basic object
 // TODO: Store source location of this LVal?
 
-#[allow(raw_pointer_deriving)]
 #[deriving(PartialEq, Clone)]
 pub enum LVal {
     Num(f64),
     Err(String),
     Sym(String),
-    Builtin(*const ()),
+    Builtin(LBuiltin),
     SExpr(Vec<LVal>),
     QExpr(Vec<LVal>)
 }
@@ -57,12 +68,12 @@ impl LVal {
     }
 
     /// Create a new function lval
-    pub fn func(f: LBuiltin) -> LVal {
+    pub fn func(f: fn(&mut LEnv, LVal) -> LVal) -> LVal {
         /*unsafe {
             println!("p(): {}", mem::transmute::<_, fn(LVal) -> LVal>(p)(LVal::qexpr()))
         }*/
 
-        LVal::Builtin(f as *const ())
+        LVal::Builtin(LBuiltin(f))
     }
 
     /// Create a new sepxr lval

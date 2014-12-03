@@ -1,4 +1,3 @@
-use std::mem;
 use lval::{LVal, LBuiltin};
 use lenv::LEnv;
 
@@ -41,20 +40,17 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
 
     // Ensure first element is a symbol
     let f = match values.remove(0).unwrap() {
-        LVal::Builtin(f) => f,
+        LVal::Builtin(LBuiltin(f)) => f,
         LVal::Sym(ref name) => {
             // FIXME: Why is this needed? Why may a symbol not be already evaluated?
-            if let LVal::Builtin(f) = env.get(name[]) { f }
+            if let LVal::Builtin(LBuiltin(f)) = env.get(name[]) { f }
                else { err!("first element is not a function") }  // TODO: print it!
         },
         _ => err!("first element is not a function")  // TODO: print it!
     };
 
     // Call with builtin operator
-    unsafe {
-        let f = mem::transmute::<_, LBuiltin>(f);
-        f(env, LVal::SExpr(values))
-    }
+    f(env, LVal::SExpr(values))
 }
 
 
