@@ -58,16 +58,17 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
 mod test {
     use super::eval;
     use lval::LVal;
+    use lenv::LEnv;
 
     #[test]
     fn eval_not_a_symbol() {
         assert_eq!(
-            eval(LVal::SExpr(vec![
+            eval(&mut LEnv::new(), LVal::SExpr(vec![
                 LVal::num(2.0),
                 LVal::num(2.0),
                 LVal::num(2.0),
             ])),
-            LVal::err("S-Expression doesn't start with symbol".into_string())
+            LVal::err("first element is not a function".into_string())
         )
     }
 }

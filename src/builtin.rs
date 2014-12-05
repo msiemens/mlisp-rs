@@ -323,12 +323,12 @@ fn builtin_eval(env: &mut LEnv, arg: LVal) -> LVal {
 #[cfg(test)]
 mod test {
     use lval::LVal;
-    use super::builtin_op;
+    use super::{builtin_op, ArithmeticOp};
 
     #[test]
     fn builtin_op_few_arguments() {
         assert_eq!(
-            builtin_op("+".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::ADD, LVal::SExpr(vec![
                 LVal::num(2.0)
             ])),
             LVal::err("`+` called with too few arguments: expected at least 1, got 0".into_string())
@@ -338,7 +338,7 @@ mod test {
     #[test]
     fn builtin_op_plus() {
         assert_eq!(
-            builtin_op("+".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::ADD, LVal::SExpr(vec![
                 LVal::num(2.0),
                 LVal::num(3.0),
                 LVal::num(4.0),
@@ -351,7 +351,7 @@ mod test {
     #[test]
     fn builtin_op_minus() {
         assert_eq!(
-            builtin_op("-".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::SUB, LVal::SExpr(vec![
                 LVal::num(2.0),
                 LVal::num(3.0)
             ])),
@@ -362,7 +362,7 @@ mod test {
     #[test]
     fn builtin_op_minus_unary() {
         assert_eq!(
-            builtin_op("-".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::SUB, LVal::SExpr(vec![
                 LVal::num(2.0)
             ])),
             LVal::num(-2.0)
@@ -372,7 +372,7 @@ mod test {
     #[test]
     fn builtin_op_mul() {
         assert_eq!(
-            builtin_op("*".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::MUL, LVal::SExpr(vec![
                 LVal::num(2.0),
                 LVal::num(3.0)
             ])),
@@ -383,7 +383,7 @@ mod test {
     #[test]
     fn builtin_op_div() {
         assert_eq!(
-            builtin_op("/".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::DIV, LVal::SExpr(vec![
                 LVal::num(2.0),
                 LVal::num(3.0)
             ])),
@@ -394,7 +394,7 @@ mod test {
     #[test]
     fn builtin_op_modulo() {
         assert_eq!(
-            builtin_op("%".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::MOD, LVal::SExpr(vec![
                 LVal::num(15.0),
                 LVal::num(12.0)
             ])),
@@ -405,7 +405,7 @@ mod test {
     #[test]
     fn builtin_op_min() {
         assert_eq!(
-            builtin_op("min".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::MIN, LVal::SExpr(vec![
                 LVal::num(2.0),
                 LVal::num(3.0)
             ])),
@@ -416,7 +416,7 @@ mod test {
     #[test]
     fn builtin_op_max() {
         assert_eq!(
-            builtin_op("max".into_string(), LVal::SExpr(vec![
+            builtin_op(ArithmeticOp::MAX, LVal::SExpr(vec![
                 LVal::num(2.0),
                 LVal::num(3.0)
             ])),
