@@ -12,13 +12,12 @@ extern crate libc;
 
 extern crate readline;
 
-// FIXME(#18822): Remove `pub`
-pub mod parser;
-pub mod lval;
-pub mod lenv;
-pub mod eval;
-pub mod builtin;
-pub mod util;
+mod parser;
+mod lval;
+mod lenv;
+mod eval;
+mod builtin;
+mod util;
 
 
 #[cfg(not(test))]
@@ -40,20 +39,27 @@ mod main {
         println!("Enter 'quit' to exit");
         println!("");
 
+        // The REPL
         loop {
+            // Reading
             let input = if let Some(i) = readline::readline("> ") { i }
                         else { println!(""); break };
             readline::add_history(input[]);
 
             if input == "quit" { break }
 
+            // Parsing
             let ast = match Parser::parse(input[], "<input>") {
                 Ok(lval) => lval,
                 Err(err) => { print_error(format!("{}\n", err)[]); continue }
             };
             let lval = LVal::from_ast(ast);
 
-            eval(&mut env, lval).println();
+            // Evaluating
+            let result = eval(&mut env, lval);
+
+            // Printing
+            result.println(&env);
         }
 
         println!("Exiting...")

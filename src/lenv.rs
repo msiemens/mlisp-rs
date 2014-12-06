@@ -17,33 +17,34 @@ impl LEnv {
     }
 
     pub fn get(&self, key: &str) -> LVal {
-        match self.contents.get(key) {
-            Some(value) => value.clone(),
-            None => {
-                // Search in parent env, if possible
-                match self.parent {
-                    Some(ref env) => unsafe {
-                        (**env).get(key)
-                    },
-                    None => err!("unbound symbol: {}", key)
-                }
+        if let Some(value) = self.contents.get(key) {
+            value.clone()
+        } else {
+            // Search in parent env, if possible
+            if let Some(ref env) = self.parent {
+                unsafe { (**env).get(key) }
+            } else {
+                err!("unbound symbol: {}", key)
             }
         }
     }
 
-    pub fn put(&mut self, mut key: LVal, value: LVal) {
+    pub fn put(&mut self, key: LVal, value: LVal) {
         self.contents.insert(key.as_sym().clone(), value.clone());
     }
 
     pub fn def(&mut self, key: LVal, value: LVal) {
-        match self.parent {
-            Some(ref env) => {
-                unsafe { (**env).def(key, value); }
-            },
-            None => {
-                self.put(key, value);
-            }
+        if let Some(ref env) = self.parent {
+            unsafe { (**env).def(key, value); }
+        } else {
+            self.put(key, value);
         }
+    }
+
+    pub fn look_up(&self, search: &LVal) -> Option<&str> {
+        self.contents.iter()
+            .find(|&(_, value)| value == search)
+            .map(|(key, _)| key[])
     }
 }
 

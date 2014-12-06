@@ -21,6 +21,9 @@ macro_rules! err(
 )
 
 
+/// A builtin function
+///
+/// Used to implement PartialEq for the function pointer
 #[deriving(Clone)]
 pub struct LBuiltin(pub fn(& mut LEnv, LVal) -> LVal);
 
@@ -36,17 +39,15 @@ impl PartialEq for LBuiltin {
 
 
 /// A basic object
-// TODO: Store source location of this LVal?
-
 #[deriving(PartialEq, Clone)]
 pub enum LVal {
     Num(f64),
     Err(String),
-    Sym(String),
+    Sym(String),  // TODO: Use SharedString?
     Function {
         env: LEnv,
-        args: Vec<LVal>,  // Actually a S-Expr
-        body: Vec<LVal>   // Actually a S-Expr
+        formals: Vec<LVal>,  // List of formal argument symbols
+        body:    Vec<LVal>   // Actually a S-Expr
     },
     Builtin(LBuiltin),
     SExpr(Vec<LVal>),
@@ -72,11 +73,12 @@ impl LVal {
         LVal::Sym(symbol.into_string())
     }
 
-    pub fn lambda(args: LVal, body: LVal) -> LVal {
+    // Create a new lambda lval
+    pub fn lambda(formals: LVal, body: LVal) -> LVal {
         LVal::Function {
-            env: LEnv::new(),
-            args: args.into_values(),
-            body: body.into_values()
+            env:     LEnv::new(),
+            formals: formals.into_values(),
+            body:    body.into_values()
         }
     }
 
@@ -127,7 +129,7 @@ impl LVal {
         } else if let &LVal::QExpr(ref values) = self {
             values
         } else {
-            panic!("LVal::as_sexpr(self={})", self);
+            panic!("LVal::as_values(self={})", self);
         }
     }
 
@@ -137,14 +139,12 @@ impl LVal {
         } else if let LVal::QExpr(values) = self {
             values
         } else {
-            panic!("LVal::as_sexpr(self={})", self);
+            panic!("LVal::into_values(self={})", self);
         }
     }
 
-    pub fn as_num(&mut self) -> &mut f64 {
-        if let &LVal::Num(ref mut float) = self {
-            //let Float(ref mut i) = float;
-            //return i
+    pub fn as_num(&self) -> &f64 {
+        if let &LVal::Num(ref float) = self {
             return float
         } else {
             panic!("LVal::as_num(self={})", self)
@@ -160,8 +160,8 @@ impl LVal {
             panic!("LVal::into_num(self={})", self)
         }
     }
-    pub fn as_sym(&mut self) -> &mut String {
-        if let &LVal::Sym(ref mut value) = self {
+    pub fn as_sym(&self) -> &String {
+        if let &LVal::Sym(ref value) = self {
             return value
         } else {
             panic!("LVal::as_sym(self={})", self)
@@ -186,6 +186,9 @@ impl LVal {
         }
     }
 
+    /// Append all values from a sexpr to a sexpr
+    ///
+    /// Panics when `self` or `container` is not a SExpr
     pub fn extend(&mut self, container: LVal) {
         if let LVal::SExpr(ref mut values) = *self {
             values.extend(container.into_values().into_iter());
@@ -198,26 +201,29 @@ impl LVal {
 
     pub fn type_name(&self) -> &'static str {
         match *self {
-            LVal::Num(..)      => "number",
-            LVal::Err(..)      => "error",
-            LVal::Sym(..)      => "symbol",
-            LVal::Function{..} => "lambda",
-            LVal::Builtin(..)  => "builtin function",
-            LVal::SExpr(..)    => "s-expression",
-            LVal::QExpr(..)    => "q-expression",
+            LVal::Num(..)      => "a number",
+            LVal::Err(..)      => "an error",
+            LVal::Sym(..)      => "a symbol",
+            LVal::Function{..} => "a lambda",
+            LVal::Builtin(..)  => "a builtin function",
+            LVal::SExpr(..)    => "a s-expression",
+            LVal::QExpr(..)    => "a q-expression"
         }
     }
 
-    pub fn print(&self) {
-        // TODO: Special case for builtins: Print name from env
+    pub fn print(&self, env: &LEnv) {
         match *self {
             LVal::Err(ref msg) => print_error(msg[]),
+            LVal::Builtin(..)  => match env.look_up(self) {
+                Some(name) => println!("<builtin: '{}'>", name),
+                None => println!("{}", self)
+            },
             _ => { print!("{}", self) }
         }
     }
 
-    pub fn println(&self) {
-        self.print();
+    pub fn println(&self, env: &LEnv) {
+        self.print(env);
         println!("");
     }
 }
@@ -229,14 +235,10 @@ impl fmt::Show for LVal {
             LVal::Num(i)            => write!(f, "{}", i),
             LVal::Err(ref msg)      => write!(f, "{}", msg),
             LVal::Sym(ref symbol)   => write!(f, "{}", symbol),
-            LVal::Function{
-                ref env,
-                ref args,
-                ref body
-            }                       => write!(f, "\\ {{{}}} {{{}}}",
-                                              stringify_vec(args),
-                                              stringify_vec(body)),
-            // TODO: Find a smart way to print the function name
+            LVal::Function{ ref env, ref formals, ref body} => {
+                write!(f, "\\ {{{}}} {{{}}}", stringify_vec(formals),
+                                              stringify_vec(body))
+            },
             LVal::Builtin(..)       => write!(f, "<function>"),
             LVal::SExpr(ref values) => {
                 write!(f, "({})", stringify_vec(values))
