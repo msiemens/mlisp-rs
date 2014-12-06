@@ -6,7 +6,7 @@ use parser::tokens::{Token, SourceLocation, dummy_source};
 use parser::util::{SharedString, rcstr};
 
 // --- Lexer: Error -------------------------------------------------------------
-const SYMBOL_CHARS: &'static str = "+-*/%\\=<>!?&_#$§^`";
+const SYMBOL_CHARS: &'static str = "+-*/%\\=<>!?&_#$§^`.,@";
 
 pub type LexerResult<T> = Result<T, LexerError>;
 

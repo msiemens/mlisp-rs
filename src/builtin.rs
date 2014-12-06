@@ -35,8 +35,8 @@ macro_rules! builtin_assert(
         match $element {
             $typ => {},
             _ => {
-                err!("`{}` called with wrong type for argument {}: expected {}, got {}",
-                            $func, $pos + 1, $typ_name, $element.type_name())
+                err!("`{}` called with wrong type for argument {}: expected {}, got {}: `{}`",
+                            $func, $pos + 1, $typ_name, $element.type_name(), $element)
             }
         }
     };
@@ -77,7 +77,10 @@ macro_rules! builtin_assert(
 
 
 pub fn initialize(env: &mut LEnv) {
+    // Environment
+    env.put(LVal::sym("\\"), LVal::func(builtin_lambda));
     env.put(LVal::sym("def"), LVal::func(builtin_def));
+    env.put(LVal::sym("="), LVal::func(builtin_put));
     env.put(LVal::sym("eval"), LVal::func(builtin_eval));
 
     // Lists
@@ -220,7 +223,11 @@ fn builtin_head(env: &mut LEnv, arg: LVal) -> LVal {
     let mut qexpr = args.remove(0).unwrap().into_values();
 
     // Take 1st element and return it
-    qexpr.remove(0).unwrap()
+    for _ in range(0, qexpr.len() - 1) {
+        qexpr.remove(1);
+    }
+
+    LVal::QExpr(qexpr)
 }
 
 
@@ -278,18 +285,55 @@ fn builtin_cons(env: &mut LEnv, arg: LVal) -> LVal {
 
 // --- Functions: Environment ---------------------------------------------------
 
-fn builtin_def(env: &mut LEnv, arg: LVal) -> LVal {
+#[allow(unused_variables)]
+fn builtin_lambda(env: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
-    builtin_assert!("eval": args.len() >= 1u);
+    builtin_assert!("\\": args.len() == 2u);
     builtin_assert!("eval": args[0u] is LVal::QExpr(_) "q-expression");
+    builtin_assert!("eval": args[1u] is LVal::QExpr(_) "q-expression");
+
+    let formals = args.remove(0).unwrap();
+    let body    = args.remove(0).unwrap();
+
+    for argument in formals.as_values().iter() {
+        if let LVal::Sym(_) = *argument {}
+        else {
+            err!("cannot use non-symbol as argument: `{}`", argument)
+        }
+    }
+
+    LVal::lambda(formals, body)
+}
+
+
+enum VariableLocation {
+    Local,
+    Global
+}
+
+impl fmt::Show for VariableLocation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            VariableLocation::Local => write!(f, "{}", "="),
+            VariableLocation::Global => write!(f, "{}", "def")
+        }
+    }
+}
+
+
+fn builtin_var(loc: VariableLocation, env: &mut LEnv, arg: LVal) -> LVal {
+    let mut args = arg.into_values();
+
+    builtin_assert!(loc: args.len() >= 1u);
+    builtin_assert!(loc: args[0u] is LVal::QExpr(_) "q-expression");
     let symbols = args.remove(0).unwrap().into_values();
 
     // Ensure all elements of first list are symbols
     for symbol in symbols.iter() {
         if let LVal::Sym(_) = *symbol {}
         else {
-            err!("cannot `def`ine non-symbol: {}", symbol)
+            err!("cannot `def`ine non-symbol: `{}`", symbol)
        }
     }
 
@@ -300,11 +344,29 @@ fn builtin_def(env: &mut LEnv, arg: LVal) -> LVal {
     }
 
     for (symbol, value) in symbols.iter().zip(args.into_iter()) {
-        env.put(symbol.clone(), value);
+        match loc {
+            VariableLocation::Local => {
+                env.put(symbol.clone(), value);
+            },
+            VariableLocation::Global => {
+                env.def(symbol.clone(), value);
+            }
+        }
     }
 
     LVal::sexpr()
 }
+
+
+fn builtin_def(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_var(VariableLocation::Global, env, arg)
+}
+
+
+fn builtin_put(env: &mut LEnv, arg: LVal) -> LVal {
+    builtin_var(VariableLocation::Local, env, arg)
+}
+
 
 fn builtin_eval(env: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();

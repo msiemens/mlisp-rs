@@ -1,7 +1,5 @@
 #![feature(macro_rules)]
 #![feature(slicing_syntax)]
-#![feature(while_let)]
-#![feature(if_let)]
 #![feature(phase)]
 #![feature(globs)]
 #![feature(unboxed_closures)]
@@ -47,7 +45,7 @@ mod main {
                         else { println!(""); break };
             readline::add_history(input[]);
 
-            if input[] == "quit" { break }
+            if input == "quit" { break }
 
             let ast = match Parser::parse(input[], "<input>") {
                 Ok(lval) => lval,
@@ -55,7 +53,7 @@ mod main {
             };
             let lval = LVal::from_ast(ast);
 
-            println!("{}", eval(&mut env, lval));
+            eval(&mut env, lval).println();
         }
 
         println!("Exiting...")

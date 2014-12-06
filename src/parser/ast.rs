@@ -3,6 +3,7 @@
 use std::fmt;
 use parser::tokens::SourceLocation;
 use parser::util::SharedString;
+use util::stringify_vec;
 
 
 // --- AST Node: Expression -----------------------------------------------------
@@ -55,16 +56,10 @@ impl fmt::Show for Expr {
             Expr::Number(i)         => write!(f, "{}", i),
             Expr::Symbol(ref token) => write!(f, "{}", token),
             Expr::SExpr(ref values) => {
-                write!(f, "({})", values.iter()
-                                        .map(|v| format!("{}", v))
-                                        .collect::<Vec<_>>()
-                                        .connect(" "))
+                write!(f, "({})", stringify_vec(values))
             },
             Expr::QExpr(ref values) => {
-                write!(f, "{{{}}}", values.iter()
-                                        .map(|v| format!("{}", v))
-                                        .collect::<Vec<_>>()
-                                        .connect(" "))
+                write!(f, "{{{}}}", stringify_vec(values))
             }
         }
     }

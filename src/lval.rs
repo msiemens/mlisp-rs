@@ -6,7 +6,7 @@ use std::mem;
 use std::fmt;
 use lenv::LEnv;
 use parser::ast::{Expr, ExprNode};
-use util::print_error;
+use util::{print_error, stringify_vec};
 
 
 /// Return an error
@@ -22,7 +22,7 @@ macro_rules! err(
 
 
 #[deriving(Clone)]
-pub struct LBuiltin(pub fn(&mut LEnv, LVal) -> LVal);
+pub struct LBuiltin(pub fn(& mut LEnv, LVal) -> LVal);
 
 impl PartialEq for LBuiltin {
     fn eq(&self, other: &LBuiltin) -> bool {
@@ -43,6 +43,11 @@ pub enum LVal {
     Num(f64),
     Err(String),
     Sym(String),
+    Function {
+        env: LEnv,
+        args: Vec<LVal>,  // Actually a S-Expr
+        body: Vec<LVal>   // Actually a S-Expr
+    },
     Builtin(LBuiltin),
     SExpr(Vec<LVal>),
     QExpr(Vec<LVal>)
@@ -67,12 +72,16 @@ impl LVal {
         LVal::Sym(symbol.into_string())
     }
 
+    pub fn lambda(args: LVal, body: LVal) -> LVal {
+        LVal::Function {
+            env: LEnv::new(),
+            args: args.into_values(),
+            body: body.into_values()
+        }
+    }
+
     /// Create a new function lval
     pub fn func(f: fn(&mut LEnv, LVal) -> LVal) -> LVal {
-        /*unsafe {
-            println!("p(): {}", mem::transmute::<_, fn(LVal) -> LVal>(p)(LVal::qexpr()))
-        }*/
-
         LVal::Builtin(LBuiltin(f))
     }
 
@@ -189,13 +198,27 @@ impl LVal {
 
     pub fn type_name(&self) -> &'static str {
         match *self {
-            LVal::Num(..)     => "number",
-            LVal::Err(..)     => "error",
-            LVal::Sym(..)     => "symbol",
-            LVal::Builtin(..) => "builtin function",
-            LVal::SExpr(..)   => "s-expression",
-            LVal::QExpr(..)   => "q-expression",
+            LVal::Num(..)      => "number",
+            LVal::Err(..)      => "error",
+            LVal::Sym(..)      => "symbol",
+            LVal::Function{..} => "lambda",
+            LVal::Builtin(..)  => "builtin function",
+            LVal::SExpr(..)    => "s-expression",
+            LVal::QExpr(..)    => "q-expression",
         }
+    }
+
+    pub fn print(&self) {
+        // TODO: Special case for builtins: Print name from env
+        match *self {
+            LVal::Err(ref msg) => print_error(msg[]),
+            _ => { print!("{}", self) }
+        }
+    }
+
+    pub fn println(&self) {
+        self.print();
+        println!("");
     }
 }
 
@@ -204,21 +227,22 @@ impl fmt::Show for LVal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LVal::Num(i)            => write!(f, "{}", i),
-            LVal::Err(ref msg)      => { print_error(msg[]); Ok(()) },
+            LVal::Err(ref msg)      => write!(f, "{}", msg),
             LVal::Sym(ref symbol)   => write!(f, "{}", symbol),
+            LVal::Function{
+                ref env,
+                ref args,
+                ref body
+            }                       => write!(f, "\\ {{{}}} {{{}}}",
+                                              stringify_vec(args),
+                                              stringify_vec(body)),
             // TODO: Find a smart way to print the function name
             LVal::Builtin(..)       => write!(f, "<function>"),
             LVal::SExpr(ref values) => {
-                write!(f, "({})", values.iter()
-                                        .map(|v| format!("{}", v))
-                                        .collect::<Vec<_>>()
-                                        .connect(" "))
+                write!(f, "({})", stringify_vec(values))
             },
             LVal::QExpr(ref values) => {
-                write!(f, "{{{}}}", values.iter()
-                                        .map(|v| format!("{}", v))
-                                        .collect::<Vec<_>>()
-                                        .connect(" "))
+                write!(f, "{{{}}}", stringify_vec(values))
             }
         }
     }
