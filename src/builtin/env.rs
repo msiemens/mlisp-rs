@@ -4,8 +4,7 @@ use lenv::LEnv;
 use eval::eval;
 
 
-#[allow(unused_variables)]
-pub fn builtin_lambda(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_lambda(_: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("\\": args.len() == 2u);

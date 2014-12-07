@@ -68,44 +68,37 @@ fn builtin_op(op: ArithmeticOp, args: LVal) -> LVal {
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_add(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_add(_: &mut LEnv, arg: LVal) -> LVal {
     builtin_op(ArithmeticOp::ADD, arg)
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_sub(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_sub(_: &mut LEnv, arg: LVal) -> LVal {
     builtin_op(ArithmeticOp::SUB, arg)
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_mul(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_mul(_: &mut LEnv, arg: LVal) -> LVal {
     builtin_op(ArithmeticOp::MUL, arg)
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_div(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_div(_: &mut LEnv, arg: LVal) -> LVal {
     builtin_op(ArithmeticOp::DIV, arg)
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_mod(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_mod(_: &mut LEnv, arg: LVal) -> LVal {
     builtin_op(ArithmeticOp::MOD, arg)
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_min(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_min(_: &mut LEnv, arg: LVal) -> LVal {
     builtin_op(ArithmeticOp::MIN, arg)
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_max(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_max(_: &mut LEnv, arg: LVal) -> LVal {
     builtin_op(ArithmeticOp::MAX, arg)
 }
 

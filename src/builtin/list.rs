@@ -2,8 +2,7 @@ use lval::LVal;
 use lenv::LEnv;
 
 
-#[allow(unused_variables)]
-pub fn builtin_head(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_head(_: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("head": args.len() == 1u);
@@ -21,8 +20,7 @@ pub fn builtin_head(env: &mut LEnv, arg: LVal) -> LVal {
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_tail(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_tail(_: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("tail": args.len() == 1u);
@@ -37,14 +35,12 @@ pub fn builtin_tail(env: &mut LEnv, arg: LVal) -> LVal {
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_list(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_list(_: &mut LEnv, arg: LVal) -> LVal {
     LVal::QExpr(arg.into_values())
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_join(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_join(_: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("join": args[*] is LVal::QExpr(_) "q-expression");
@@ -59,8 +55,7 @@ pub fn builtin_join(env: &mut LEnv, arg: LVal) -> LVal {
 }
 
 
-#[allow(unused_variables)]
-pub fn builtin_cons(env: &mut LEnv, arg: LVal) -> LVal {
+pub fn builtin_cons(_: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("cons": args.len() == 2u);

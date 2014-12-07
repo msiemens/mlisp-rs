@@ -11,8 +11,3 @@ pub type SharedString = Rc<String>;
 pub fn rcstr<'a>(s: &'a str) -> SharedString {
     Rc::new(s.into_string())
 }
-
-/// Create a shared string from a `String`
-pub fn rcstring(s: String) -> SharedString {
-    Rc::new(s)
-}

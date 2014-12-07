@@ -211,14 +211,46 @@ impl LVal {
         }
     }
 
-    pub fn print(&self, env: &LEnv) {
+    pub fn to_string(&self, env: &LEnv) -> String {
         match *self {
-            LVal::Err(ref msg) => print_error(msg[]),
-            LVal::Builtin(..)  => match env.look_up(self) {
-                Some(name) => println!("<builtin: '{}'>", name),
-                None => println!("{}", self)
+            LVal::Sym(ref name) => {
+                match env.get(name[]) {
+                    LVal::Err(..) => name.clone(),
+                    value         => value.to_string(env)
+                }
             },
-            _ => { print!("{}", self) }
+            LVal::SExpr(ref values) => {
+                format!(
+                    "({})",
+                    values.iter()
+                        .map(|v| v.to_string(env))
+                        .collect::<Vec<_>>()
+                        .connect(" ")
+                )
+            }
+            LVal::Function { ref env, ref formals, ref body } => {
+                format!(
+                    "\\ {{{}}} {{{}}}",
+                    stringify_vec(formals),
+                    body.iter()
+                        .map(|v| v.to_string(env))
+                        .collect::<Vec<_>>()
+                        .connect(" ")
+                )
+            },
+            LVal::Builtin(..) => match env.look_up(self) {
+                Some(name) => format!("<builtin: '{}'>", name),
+                None => format!("{}", self)
+            },
+            _ => { format!("{}", self) }
+        }
+    }
+
+    pub fn print(&self, env: &LEnv) {
+        if let LVal::Err(ref msg) = *self {
+            print_error(msg[]);
+        } else {
+            print!("{}", self.to_string(env));
         }
     }
 
@@ -229,13 +261,14 @@ impl LVal {
 }
 
 
+// Used for debugging and when the environment is not available
 impl fmt::Show for LVal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LVal::Num(i)            => write!(f, "{}", i),
             LVal::Err(ref msg)      => write!(f, "{}", msg),
             LVal::Sym(ref symbol)   => write!(f, "{}", symbol),
-            LVal::Function{ ref env, ref formals, ref body} => {
+            LVal::Function{ env: _, ref formals, ref body } => {
                 write!(f, "\\ {{{}}} {{{}}}", stringify_vec(formals),
                                               stringify_vec(body))
             },
