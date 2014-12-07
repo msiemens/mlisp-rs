@@ -1,5 +1,6 @@
 use lval::LVal;
 use lenv::LEnv;
+use builtin::conditions::*;
 use builtin::env::*;
 use builtin::list::*;
 use builtin::math::*;
@@ -78,6 +79,7 @@ macro_rules! builtin_assert(
 )
 
 
+mod conditions;
 mod env;
 mod list;
 mod math;
@@ -85,10 +87,22 @@ mod math;
 
 pub fn initialize(env: &mut LEnv) {
     // Environment
-    env.put(LVal::sym("\\"), LVal::func(builtin_lambda));
-    env.put(LVal::sym("def"), LVal::func(builtin_def));
-    env.put(LVal::sym("="), LVal::func(builtin_put));
+    env.put(LVal::sym("\\"),   LVal::func(builtin_lambda));
+    env.put(LVal::sym("def"),  LVal::func(builtin_def));
+    env.put(LVal::sym("="),    LVal::func(builtin_put));
     env.put(LVal::sym("eval"), LVal::func(builtin_eval));
+
+    // Conditions
+    env.put(LVal::sym("<"),    LVal::func(builtin_lt));
+    env.put(LVal::sym("<="),   LVal::func(builtin_le));
+    env.put(LVal::sym(">="),   LVal::func(builtin_ge));
+    env.put(LVal::sym(">"),    LVal::func(builtin_gt));
+    env.put(LVal::sym("=="),   LVal::func(builtin_eq));
+    env.put(LVal::sym("!="),   LVal::func(builtin_neq));
+    env.put(LVal::sym("if"),   LVal::func(builtin_if));
+    env.put(LVal::sym("or"),   LVal::func(builtin_or));
+    env.put(LVal::sym("and"),  LVal::func(builtin_and));
+    env.put(LVal::sym("not"),  LVal::func(builtin_not));
 
     // Lists
     env.put(LVal::sym("head"), LVal::func(builtin_head));
@@ -98,11 +112,11 @@ pub fn initialize(env: &mut LEnv) {
     env.put(LVal::sym("cons"), LVal::func(builtin_cons));
 
     // Math
-    env.put(LVal::sym("+"), LVal::func(builtin_add));
-    env.put(LVal::sym("-"), LVal::func(builtin_sub));
-    env.put(LVal::sym("*"), LVal::func(builtin_mul));
-    env.put(LVal::sym("/"), LVal::func(builtin_div));
-    env.put(LVal::sym("%"), LVal::func(builtin_mod));
-    env.put(LVal::sym("min"), LVal::func(builtin_min));
-    env.put(LVal::sym("max"), LVal::func(builtin_max));
+    env.put(LVal::sym("+"),    LVal::func(builtin_add));
+    env.put(LVal::sym("-"),    LVal::func(builtin_sub));
+    env.put(LVal::sym("*"),    LVal::func(builtin_mul));
+    env.put(LVal::sym("/"),    LVal::func(builtin_div));
+    env.put(LVal::sym("%"),    LVal::func(builtin_mod));
+    env.put(LVal::sym("min"),  LVal::func(builtin_min));
+    env.put(LVal::sym("max"),  LVal::func(builtin_max));
 }
