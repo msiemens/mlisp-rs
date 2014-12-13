@@ -33,6 +33,7 @@ fn builtin_op(op: ArithmeticOp, mut args: Vec<LVal>) -> LVal {
     builtin_assert!(op: args[*] is number);
     builtin_assert!(op: args.len() >= 1u);
 
+    //let mut x = *args[0].as_num();
     let mut x = args.remove(0).unwrap().into_num();
 
     // Perform unary minus operation

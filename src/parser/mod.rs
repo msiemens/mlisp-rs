@@ -30,10 +30,10 @@ impl std::fmt::Show for ParserError {
             ParserError::UnexpectedToken { ref found, ref expected, ref location } => {
                 match *expected {
                     Some(ref expected) => {
-                        write!(f, "Expected {}, found `{}` at {}", expected, found, location)
+                        write!(f, "expected {}, found `{}` at {}", expected, found, location)
                     },
                     None => {
-                        write!(f, "Unexpected token: `{}` at {}", found, location)
+                        write!(f, "unexpected token: `{}` at {}", found, location)
                     }
                 }
             },
@@ -160,12 +160,25 @@ impl<'a> Parser<'a> {
         let location = self.update_location();
 
         let number = match self.token {
-            Token::INTEGER(i) => Expr::Number(i),
+            Token::NUMBER(i) => Expr::Number(i),
             _ => unexpected!(self.token instead of "a number" @ location)
         };
         try!(self.bump());
 
         Ok(ExprNode::new(number, location))
+    }
+
+    /// Parse a string
+    fn parse_string(&mut self) -> ParserResult<ExprNode> {
+        let location = self.update_location();
+
+        let string = match self.token {
+            Token::STRING(ref s) => Expr::String(s.clone()),
+            _ => unexpected!(self.token instead of "a string" @ location)
+        };
+        try!(self.bump());
+
+        Ok(ExprNode::new(string, location))
     }
 
     /// Parse a symbol
@@ -224,7 +237,8 @@ impl<'a> Parser<'a> {
     /// Parse a single expression
     fn parse_expr(&mut self) -> ParserResult<ExprNode> {
         let stmt = match self.token {
-            Token::INTEGER(_) => try!(self.parse_number()),
+            Token::NUMBER(_) => try!(self.parse_number()),
+            Token::STRING(_)  => try!(self.parse_string()),
             Token::SYMBOL(_)  => try!(self.parse_symbol()),
             Token::LPAREN     => try!(self.parse_sexpr()),
             Token::LBRACE     => try!(self.parse_qexpr()),
@@ -256,7 +270,7 @@ mod tests {
     fn test_expr() {
         assert_eq!(
             parse(
-                vec![LPAREN, SYMBOL(rcstr("+")), INTEGER(3), INTEGER(2), RPAREN],
+                vec![LPAREN, SYMBOL(rcstr("+")), NUMBER(3.), NUMBER(2.), RPAREN],
                 |p| p.parse_expr().unwrap()
             ),
             ExprNode::new(
@@ -267,11 +281,11 @@ mod tests {
                             dummy_source()
                         ),
                         ExprNode::new(
-                            Expr::Number(3),
+                            Expr::Number(3.),
                             dummy_source()
                         ),
                         ExprNode::new(
-                            Expr::Number(2),
+                            Expr::Number(2.),
                             dummy_source()
                         ),
                     ]

@@ -6,15 +6,16 @@ use parser::util::{rcstr, SharedString};
 // --- Token --------------------------------------------------------------------
 
 /// A token
-#[deriving(Clone, PartialEq, Eq)]
+#[deriving(Clone, PartialEq)]
 pub enum Token {
     LPAREN,
     RPAREN,
     LBRACE,
     RBRACE,
 
+    STRING(SharedString),
     SYMBOL(SharedString),
-    INTEGER(i64),
+    NUMBER(f64),
 
     EOF,
     PLACEHOLDER
@@ -28,8 +29,9 @@ impl fmt::Show for Token {
             Token::LBRACE        => write!(f, "{{"),
             Token::RBRACE        => write!(f, "}}"),
 
+            Token::STRING(ref s) => write!(f, "\"{}\"", s.escape_default()),
             Token::SYMBOL(ref s) => write!(f, "{}", s),
-            Token::INTEGER(i)    => write!(f, "{}", i),
+            Token::NUMBER(n)     => write!(f, "{}", n),
 
             Token::EOF           => write!(f, "EOF"),
             Token::PLACEHOLDER   => write!(f, "PLACEHOLDER")

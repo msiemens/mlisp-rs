@@ -3,7 +3,7 @@
 use std;
 use std::rc::Rc;
 use parser::tokens::{Token, SourceLocation, dummy_source};
-use parser::util::{SharedString, rcstr};
+use parser::util::{SharedString, rcstr, rcstring};
 
 // --- Lexer: Error -------------------------------------------------------------
 const SYMBOL_CHARS: &'static str = "+-*/%\\=<>!?&_#$§^`.,:@";
@@ -11,6 +11,11 @@ const SYMBOL_CHARS: &'static str = "+-*/%\\=<>!?&_#$§^`.,:@";
 pub type LexerResult<T> = Result<T, LexerError>;
 
 pub enum LexerError {
+    UnexpectedChar {
+        expected: SharedString,
+        found: SharedString,
+        location: SourceLocation
+    },
     UnknownToken {
         token: SharedString,  // result of curr_repr
         location: SourceLocation
@@ -24,6 +29,10 @@ pub enum LexerError {
 impl std::fmt::Show for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
+            LexerError::UnexpectedChar { ref expected, ref found, ref location } => {
+                write!(f, "unexpected character: expected `{}`, but found {} at {}",
+                       expected, found, location)
+            },
             LexerError::UnknownToken { ref token, ref location } => {
                 write!(f, "unknown token: `{}` at {}", token, location)
             },
@@ -43,7 +52,7 @@ macro_rules! unknown_token(
     )
 )
 
-macro_rules! invalid_integer(
+macro_rules! invalid_number(
     ($input:expr @ $location:expr) => (
         return Err(LexerError::InvalidInteger {
             input: $input.clone(),
@@ -120,30 +129,31 @@ impl<'a> FileLexer<'a> {
         }
     }
 
-    //fn expect(&mut self, expect: char) {
-    //    if self.curr != Some(expect) {
-    //        let expect_str = match expect {
-    //            '\'' => "quote".into_string(),
-    //            c => format!("'{}'", c)
-    //        };
-    //        let found_str = match self.curr {
-    //            Some(_) => format!("'{}'", self.curr_repr()),
-    //            None => "EOF".into_string()
-    //        };
-    //
-    //        self.fatal(format!("Expected `{}`, found `{}`",
-    //                           expect_str, found_str))
-    //    }
-    //
-    //   self.bump();
-    //}
+    fn expect(&mut self, expect: char) -> LexerResult<()>  {
+        if self.curr != Some(expect) {
+            let expect_str = String::from_chars(&[expect]).escape_default();
+            let found_str = match self.curr {
+                Some(_) => format!("'{}'", self.curr_repr()),
+                None => "EOF".into_string()
+            };
+
+            return Err(LexerError::UnexpectedChar {
+                expected: rcstring(expect_str),
+                found: rcstring(found_str),
+                location: self.get_source()
+            });
+        }
+
+       self.bump();
+
+       Ok(())
+    }
 
     /// Get a printable representation of the current char
     fn curr_repr(&self) -> SharedString {
         match self.curr {
             Some(c) => {
-                let repr: Vec<_> = c.escape_default().collect();
-                Rc::new(String::from_chars(&*repr))
+                Rc::new(String::from_chars(&[c]).escape_default())
             },
             None => rcstr("EOF")
         }
@@ -169,12 +179,12 @@ impl<'a> FileLexer<'a> {
         Rc::new(String::from_chars(&*chars))
     }
 
-    //fn eat_all(&mut self, cond: |&char| -> bool) {
-    //    while let Some(c) = self.curr {
-    //        if cond(&c) { self.bump(); }
-    //        else { break; }
-    //    }
-    //}
+    fn eat_all(&mut self, cond: |&char| -> bool) {
+        while let Some(c) = self.curr {
+            if cond(&c) { self.bump(); }
+            else { break; }
+        }
+    }
 
     // --- Internal methods: Tokenizers -----------------------------------------
 
@@ -182,16 +192,16 @@ impl<'a> FileLexer<'a> {
     fn tokenize_number(&mut self) -> LexerResult<Token> {
         let sign = if self.curr == Some('-') {
             self.bump();
-            -1
+            -1.0
         } else {
-            1
+            1.0
         };
-        let integer = self.collect(|c| c.is_numeric());
+        let number = self.collect(|c| c.is_numeric() || *c == '.');
 
-        let integer = if let Some(m) = from_str(integer[]) { m }
-                      else { invalid_integer!(integer @ self.get_source()) };
+        let number = if let Some(m) = from_str(number[]) { m }
+                      else { invalid_number!(number @ self.get_source()) };
 
-        Ok(Token::INTEGER(sign * integer))
+        Ok(Token::NUMBER(sign * number))
     }
 
     /// Tokenize a symbol
@@ -200,6 +210,36 @@ impl<'a> FileLexer<'a> {
             c.is_alphanumeric() || SYMBOL_CHARS.contains_char(*c)
         });
         Ok(Token::SYMBOL(symbol))
+    }
+
+    /// Tokenize a string
+    fn tokenize_string(&mut self) -> LexerResult<Token> {
+        self.bump();
+        let mut string = vec![];
+        let mut escaped = false;
+
+        while let Some(c) = self.curr {
+            if c == '"' && !escaped {
+                break;
+            } else {
+                string.push(c);
+                self.bump();
+
+                escaped = c == '\\';
+            }
+        }
+
+        try!(self.expect('"'));
+
+        let string = String::from_chars(&*string)
+            .replace("\\n", "\n")
+            .replace("\\r", "\r")
+            .replace("\\t", "\t")
+            .replace("\\\\", "\\")
+            .replace("\\\"", "\"")
+            .replace("\\0", "\0");
+
+        Ok(Token::STRING(Rc::new(string)))
     }
 
 
@@ -217,25 +257,18 @@ impl<'a> FileLexer<'a> {
             c if c.is_alphanumeric() || SYMBOL_CHARS.contains_char(c) => {
                 try!(self.tokenize_symbol())
             },
-            /*'+' | '-' | '*' | '/' | '%' => {
-                let is_num = c == '-' && match self.nextch() {
-                    Some(c) => c.is_numeric(),
-                    None => false
-                };
-
-                if is_num {
-                    // Tokenize number
-                    try!(self.tokenize_number())
-                } else {
-                    self.bump();
-                    Token::SYMBOL(rcstring(String::from_chars(&[c])))
-                }
-            },*/
+            '"' => {
+                try!(self.tokenize_string())
+            }
             '(' => { self.bump(); Token::LPAREN },
             ')' => { self.bump(); Token::RPAREN },
             '{' => { self.bump(); Token::LBRACE },
             '}' => { self.bump(); Token::RBRACE },
 
+            ';' => {
+                self.eat_all(|c| *c != '\n');
+                return Ok(None);
+            },
             c if c.is_whitespace() => {
                 if c == '\n' { self.lineno += 1; }
 
@@ -342,13 +375,13 @@ mod tests {
     #[test]
     fn test_number() {
         assert_eq!(tokenize("123"),
-                   vec![INTEGER(123)]);
+                   vec![NUMBER(123.)]);
     }
 
     /*#[test]
     fn test_number_neg() {
         assert_eq!(tokenize("-123"),
-                   vec![INTEGER(-123)]);
+                   vec![NUMBER(-123)]);
     }*/
 
     #[test]

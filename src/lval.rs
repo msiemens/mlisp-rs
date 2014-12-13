@@ -25,11 +25,13 @@ macro_rules! lval_is(
     ($el:expr, number) => ( if let LVal::Num(..)   = $el { true } else { false } );
     ($el:expr, qexpr)  => ( if let LVal::QExpr(..) = $el { true } else { false } );
     ($el:expr, sexpr)  => ( if let LVal::SExpr(..) = $el { true } else { false } );
+    ($el:expr, string) => ( if let LVal::Str(..)   = $el { true } else { false } );
 )
 
 macro_rules! lval_type_name(
     (number)   => ("a number");
     (err)      => ("an error");
+    (string)   => ("a string");
     (sym)      => ("a symbol");
     (function) => ("a lambda");
     (builtin)  => ("a builtin function");
@@ -61,7 +63,7 @@ pub enum LVal {
     Num(f64),
     Err(String),
     Sym(String),  // TODO: Use SharedString?
-    //Str(String),
+    Str(String),
     Function {
         env: LEnv,
         formals: Vec<LVal>,  // List of formal argument symbols
@@ -84,6 +86,11 @@ impl LVal {
     /// Create a new error lval
     pub fn err(msg: String) -> LVal {
         LVal::Err(msg)
+    }
+
+    /// Create a new string lval
+    pub fn str(s: &str) -> LVal {
+        LVal::Str(s.into_string())
     }
 
     /// Create a new symbol lval
@@ -119,6 +126,7 @@ impl LVal {
     pub fn from_ast(ast: ExprNode) -> LVal {
         match ast.value {
             Expr::Number(i) => LVal::num(i as f64),
+            Expr::String(s) => LVal::str(s[]),
             Expr::Symbol(s) => LVal::sym(s[]),
             Expr::SExpr(exprs) => {
                 let mut sexpr = LVal::sexpr();
@@ -178,6 +186,15 @@ impl LVal {
             panic!("LVal::into_num(self={})", self)
         }
     }
+
+    pub fn into_str(self) -> String {
+        if let LVal::Str(s) = self {
+            return s
+        } else {
+            panic!("LVal::into_str(self={})", self)
+        }
+    }
+
     pub fn as_sym(&self) -> &String {
         if let &LVal::Sym(ref value) = self {
             return value
@@ -222,7 +239,7 @@ impl LVal {
             LVal::Num(..)      => "a number",
             LVal::Err(..)      => "an error",
             LVal::Sym(..)      => "a symbol",
-            //LVal::Str(..)      => "a string",
+            LVal::Str(..)      => "a string",
             LVal::Function{..} => "a lambda",
             LVal::Builtin(..)  => "a builtin function",
             LVal::SExpr(..)    => "a s-expression",
@@ -286,6 +303,7 @@ impl fmt::Show for LVal {
         match *self {
             LVal::Num(i)            => write!(f, "{}", i),
             LVal::Err(ref msg)      => write!(f, "{}", msg),
+            LVal::Str(ref string)   => write!(f, "\"{}\"", string.escape_default()),
             LVal::Sym(ref symbol)   => write!(f, "{}", symbol),
             LVal::Function{ env: _, ref formals, ref body } => {
                 write!(f, "\\ {{{}}} {{{}}}", stringify_vec(formals),

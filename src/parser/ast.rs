@@ -9,7 +9,7 @@ use util::stringify_vec;
 // --- AST Node: Expression -----------------------------------------------------
 
 /// An expression AST node
-#[deriving(PartialEq, Eq, Clone)]
+#[deriving(PartialEq, Clone)]
 pub struct ExprNode {
     /// The expression's value
     pub value: Expr,
@@ -35,7 +35,7 @@ impl fmt::Show for ExprNode {
 
 // --- AST Node: Expression: Values ---------------------------------------------
 
-#[deriving(PartialEq, Eq, Clone)]
+#[deriving(PartialEq, Clone)]
 pub enum Expr {
     /// A SExpr
     SExpr(Vec<ExprNode>),
@@ -43,22 +43,26 @@ pub enum Expr {
     /// A QExpr
     QExpr(Vec<ExprNode>),
 
+    /// A string
+    String(SharedString),
+
     /// A symbol
     Symbol(SharedString),
 
     /// A number
-    Number(i64)
+    Number(f64)
 }
 
 impl fmt::Show for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Expr::Number(i)         => write!(f, "{}", i),
-            Expr::Symbol(ref token) => write!(f, "{}", token),
-            Expr::SExpr(ref values) => {
+            Expr::Number(i)          => write!(f, "{}", i),
+            Expr::String(ref string) => write!(f, "{}", string),
+            Expr::Symbol(ref token)  => write!(f, "{}", token),
+            Expr::SExpr(ref values)  => {
                 write!(f, "({})", stringify_vec(values))
             },
-            Expr::QExpr(ref values) => {
+            Expr::QExpr(ref values)  => {
                 write!(f, "{{{}}}", stringify_vec(values))
             }
         }

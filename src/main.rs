@@ -20,6 +20,7 @@ mod builtin;
 mod util;
 
 
+
 #[cfg(not(test))]
 mod main {
     use readline;
@@ -31,7 +32,7 @@ mod main {
     use parser::Parser;
     use builtin;
 
-    pub fn main() {
+    pub fn repl() {
         let mut env = LEnv::new();
         builtin::initialize(&mut env);
 
@@ -42,8 +43,26 @@ mod main {
         // The REPL
         loop {
             // Reading
-            let input = if let Some(i) = readline::readline("> ") { i }
+            let mut input = if let Some(i) = readline::readline("> ") { i }
+                            else { println!(""); break };
+
+            loop {
+                let parens_l = input.as_bytes().iter().filter(|c| **c == ('(' as u8)).count();
+                let parens_r = input.as_bytes().iter().filter(|c| **c == (')' as u8)).count();
+                let braces_l = input.as_bytes().iter().filter(|c| **c == ('{' as u8)).count();
+                let braces_r = input.as_bytes().iter().filter(|c| **c == ('}' as u8)).count();
+
+                if parens_l == parens_r && braces_l == braces_r {
+                    break
+                }
+
+                let s = if let Some(i) = readline::readline(". ") { i }
                         else { println!(""); break };
+
+                input.push_str(s[]);
+
+            }
+
             readline::add_history(input[]);
 
             if input == "quit" { break }
@@ -59,14 +78,38 @@ mod main {
             let result = eval(&mut env, lval);
 
             // Printing
+            if let LVal::SExpr(ref v) = result {
+                if v.len() == 0 {
+                    continue
+                }
+            }
+
             result.println(&env);
         }
 
         println!("Exiting...")
     }
+
+    pub fn run_files(args: Vec<String>) {
+        for file in args.into_iter().skip(1) {
+            let mut env = LEnv::new();
+            builtin::initialize(&mut env);
+
+            let result = builtin::env::builtin_load(&mut env, vec![LVal::str(file[])]);
+            if let LVal::Err(..) = result {
+                result.println(&env);
+            }
+        }
+    }
 }
 
 #[cfg(not(test))]
 fn main() {
-    main::main()
+    use std::os;
+
+    if os::args().len() >= 2 {
+        main::run_files(os::args())
+    } else {
+        main::repl()
+    }
 }

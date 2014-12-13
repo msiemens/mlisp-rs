@@ -1,7 +1,9 @@
 use std::fmt;
+use std::io::File;
 use lval::LVal;
 use lenv::LEnv;
 use eval::eval;
+use parser::Parser;
 
 
 pub fn builtin_lambda(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
@@ -92,4 +94,54 @@ pub fn builtin_eval(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
     // Evaluate it
     eval(env, LVal::SExpr(qexpr.into_values()))
+}
+
+
+pub fn builtin_load(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
+    builtin_assert!("load": args.len() == 1u);
+    builtin_assert!("load": args[0u] is string);
+
+    // Read the file
+    let filename = args.remove(0).unwrap().into_str();
+    let contents = match File::open(&Path::new(&*filename)).read_to_string() {
+        Ok(s) => s,
+        Err(err) => return LVal::err(format!("{}", err))
+    };
+
+    // Parse it
+    let ast = match Parser::parse(contents[], &*filename) {
+        Ok(lval) => lval,
+        Err(err) => return LVal::err(format!("{}", err))
+    };
+    let exprs = LVal::from_ast(ast).into_values();
+
+    // Run it
+    for val in exprs.into_iter() {
+        let result = eval(env, val);
+
+        if let LVal::Err(..) = result {
+            result.println(env);
+        }
+    }
+
+    LVal::sexpr()
+}
+
+
+pub fn builtin_error(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
+    builtin_assert!("error": args.len() == 1u);
+    builtin_assert!("error": args[0u] is string);
+
+    let msg = args.remove(0).unwrap().into_str();
+    LVal::Err(msg)
+}
+
+
+pub fn builtin_println(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
+    builtin_assert!("println": args.len() == 1u);
+
+    let lval = args.remove(0).unwrap();
+    lval.println(env);
+
+    LVal::sexpr()
 }

@@ -43,14 +43,14 @@ pub fn builtin_gt(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 }
 
 
-pub fn builtin_ord(ord: OrderingType, mut args: Vec<LVal>) -> LVal {
+pub fn builtin_ord(ord: OrderingType, args: Vec<LVal>) -> LVal {
     use self::OrderingType::*;
 
     builtin_assert!(ord: args.len() >= 2u);
     builtin_assert!(ord: args[*] is number);
 
     let mut result = true;
-    let mut x = args.remove(0).unwrap().into_num();
+    let mut x = *args[0].as_num();
 
     for arg in args.into_iter() {
         let y = arg.into_num();
@@ -119,12 +119,18 @@ pub fn builtin_if(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
         builtin_assert!("if": args[2u] is qexpr);
     }
 
-    let branch = if args.remove(0).unwrap().into_num() != 0. {
+    let test = args.remove(0).unwrap().into_num();
+    let consequence = args.remove(0).unwrap();
+    let alternative = if args.len() == 1 {
         args.remove(0).unwrap()
-    } else if args.len() == 2 {
-        args.remove(1).unwrap()
     } else {
         LVal::sexpr()
+    };
+
+    let branch = if test != 0. {
+        consequence
+    } else {
+        alternative
     };
 
     eval(env, LVal::SExpr(branch.into_values()))
