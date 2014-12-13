@@ -32,7 +32,7 @@ fn builtin_op(op: ArithmeticOp, args: LVal) -> LVal {
     let mut args = args.into_values();
 
     // Make sure all arguments are numbers
-    builtin_assert!(op: args[*] is LVal::Num(_) "number");
+    builtin_assert!(op: args[*] is number);
     builtin_assert!(op: args.len() >= 1u);
 
     let mut x = args.remove(0).unwrap().into_num();

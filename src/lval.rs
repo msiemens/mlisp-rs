@@ -21,6 +21,23 @@ macro_rules! err(
 )
 
 
+macro_rules! lval_is(
+    ($el:expr, number) => ( if let LVal::Num(..)   = $el { true } else { false } );
+    ($el:expr, qexpr)  => ( if let LVal::QExpr(..) = $el { true } else { false } );
+    ($el:expr, sexpr)  => ( if let LVal::SExpr(..) = $el { true } else { false } );
+)
+
+macro_rules! lval_type_name(
+    (number)   => ("a number");
+    (err)      => ("an error");
+    (sym)      => ("a symbol");
+    (function) => ("a lambda");
+    (builtin)  => ("a builtin function");
+    (sexpr)    => ("a s-expression");
+    (qexpr)    => ("a q-expression");
+)
+
+
 /// A builtin function
 ///
 /// Used to implement PartialEq for the function pointer

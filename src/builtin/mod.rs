@@ -33,13 +33,11 @@ macro_rules! builtin_assert(
     };
 
     // FIXME: Find a solution without typ_name
-    ($func:expr: ASSERT TYPE: $element:expr, $pos:expr, $typ:pat $typ_name:expr) => {
-        match $element {
-            $typ => {},
-            _ => {
-                err!("`{}` called with wrong type for argument {}: expected {}, got {}: `{}`",
-                            $func, $pos + 1, $typ_name, $element.type_name(), $element)
-            }
+    ($func:expr: ASSERT TYPE: $element:expr, $pos:expr, $typ:ident) => {
+        if !lval_is!($element, $typ) {
+            err!("`{}` called with wrong type for argument {}: expected {}, got {}: `{}`",
+                //$func, $pos + 1, $typ_name, $element.type_name(), $element)
+                $func, $pos + 1, lval_type_name!($typ), $element.type_name(), $element)
         }
     };
 
@@ -57,23 +55,23 @@ macro_rules! builtin_assert(
         builtin_assert!($func: ASSERT LENGTH LE, $args.len(), $expected)
     };
 
-    ($func:expr: $args:ident [*] is $typ:pat $typ_name:expr) => {
+    ($func:expr: $args:ident [*] is $typ:ident) => {
         for (i, arg) in $args.iter().enumerate() {
-            builtin_assert!($func: ASSERT TYPE: arg, i, &$typ $typ_name);
+            builtin_assert!($func: ASSERT TYPE: *arg, i, $typ);
         }
     };
 
     ($func:expr: $args:ident [ $i:expr ] != {}) => {
         {
-            builtin_assert!($func: ASSERT TYPE: $args[$i], $i, LVal::QExpr(_) "q-expr");
+            builtin_assert!($func: ASSERT TYPE: $args[$i], $i, qexpr);
             if $args[$i].as_values().len() == 0 {
                 err!("`{}` called with empty q-expr", $func)
             }
         }
     };
 
-    ($func:expr: $args:ident [ $i:expr ] is $typ:pat $typ_name:expr) => {
-        builtin_assert!($func: ASSERT TYPE: $args[$i], $i, $typ $typ_name);
+    ($func:expr: $args:ident [ $i:expr ] is $typ:ident) => {
+        builtin_assert!($func: ASSERT TYPE: $args[$i], $i, $typ);
     };
 
 )

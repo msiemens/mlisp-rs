@@ -43,7 +43,7 @@ pub fn builtin_list(_: &mut LEnv, arg: LVal) -> LVal {
 pub fn builtin_join(_: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
-    builtin_assert!("join": args[*] is LVal::QExpr(_) "q-expression");
+    builtin_assert!("join": args[*] is qexpr);
 
     let mut joined = args.remove(0).unwrap();
 
@@ -59,7 +59,7 @@ pub fn builtin_cons(_: &mut LEnv, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!("cons": args.len() == 2u);
-    builtin_assert!("cons": args[1u] is LVal::QExpr(_) "q-expression");
+    builtin_assert!("cons": args[1u] is qexpr);
 
     let mut value = LVal::qexpr();
     value.append(args.remove(0).unwrap());

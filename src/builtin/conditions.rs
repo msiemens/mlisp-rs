@@ -49,7 +49,7 @@ pub fn builtin_ord(ord: OrderingType, arg: LVal) -> LVal {
     let mut args = arg.into_values();
 
     builtin_assert!(ord: args.len() >= 2u);
-    builtin_assert!(ord: args[*] is LVal::Num(..) "number");
+    builtin_assert!(ord: args[*] is number);
 
     let mut result = true;
     let mut x = args.remove(0).unwrap().into_num();
@@ -118,11 +118,11 @@ pub fn builtin_if(env: &mut LEnv, arg: LVal) -> LVal {
 
     builtin_assert!("if": args.len() >= 2u);
     builtin_assert!("if": args.len() <= 3u);
-    builtin_assert!("if": args[0u] is LVal::Num(_) "number");
-    builtin_assert!("if": args[1u] is LVal::QExpr(_) "q-expression");
+    builtin_assert!("if": args[0u] is number);
+    builtin_assert!("if": args[1u] is qexpr);
 
     if args.len() == 3 {
-        builtin_assert!("if": args[2u] is LVal::QExpr(_) "q-expression");
+        builtin_assert!("if": args[2u] is qexpr);
     }
 
     let branch = if args.remove(0).unwrap().into_num() != 0. {
@@ -141,7 +141,7 @@ pub fn builtin_and(_: &mut LEnv, arg: LVal) -> LVal {
     let args = arg.into_values();
 
     builtin_assert!("and": args.len() == 2u);
-    builtin_assert!("and": args[*] is LVal::Num(_) "number");
+    builtin_assert!("and": args[*] is number);
 
     let n1 = (*args[0].as_num()) != 0.;
     let n2 = (*args[1].as_num()) != 0.;
@@ -154,7 +154,7 @@ pub fn builtin_or(_: &mut LEnv, arg: LVal) -> LVal {
     let args = arg.into_values();
 
     builtin_assert!("or": args.len() == 2u);
-    builtin_assert!("or": args[*] is LVal::Num(_) "number");
+    builtin_assert!("or": args[*] is number);
 
     let n1 = (*args[0].as_num()) != 0.;
     let n2 = (*args[1].as_num()) != 0.;
@@ -167,7 +167,7 @@ pub fn builtin_not(_: &mut LEnv, arg: LVal) -> LVal {
     let args = arg.into_values();
 
     builtin_assert!("not": args.len() == 1u);
-    builtin_assert!("not": args[0u] is LVal::Num(_) "number");
+    builtin_assert!("not": args[0u] is number);
 
     let n = (*args[0].as_num()) != 0.;
 
