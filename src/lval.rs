@@ -30,8 +30,8 @@ pub struct LBuiltin(pub fn(& mut LEnv, LVal) -> LVal);
 impl PartialEq for LBuiltin {
     fn eq(&self, other: &LBuiltin) -> bool {
         unsafe {
-            let ptr_self:  *const () = mem::transmute(*self);
-            let ptr_other: *const () = mem::transmute(*other);
+            let ptr_self:  *const () = mem::transmute(self);
+            let ptr_other: *const () = mem::transmute(other);
             ptr_self == ptr_other
         }
     }
