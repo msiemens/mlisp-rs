@@ -4,9 +4,7 @@ use lenv::LEnv;
 use eval::eval;
 
 
-pub fn builtin_lambda(_: &mut LEnv, arg: LVal) -> LVal {
-    let mut args = arg.into_values();
-
+pub fn builtin_lambda(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
     builtin_assert!("\\": args.len() == 2u);
     builtin_assert!("\\": args[0u] is qexpr);
     builtin_assert!("\\": args[1u] is qexpr);
@@ -40,9 +38,7 @@ impl fmt::Show for VariableLocation {
 }
 
 
-pub fn builtin_var(loc: VariableLocation, env: &mut LEnv, arg: LVal) -> LVal {
-    let mut args = arg.into_values();
-
+pub fn builtin_var(loc: VariableLocation, env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
     builtin_assert!(loc: args.len() >= 1u);
     builtin_assert!(loc: args[0u] is qexpr);
 
@@ -77,19 +73,17 @@ pub fn builtin_var(loc: VariableLocation, env: &mut LEnv, arg: LVal) -> LVal {
 }
 
 
-pub fn builtin_def(env: &mut LEnv, arg: LVal) -> LVal {
-    builtin_var(VariableLocation::Global, env, arg)
+pub fn builtin_def(env: &mut LEnv, args: Vec<LVal>) -> LVal {
+    builtin_var(VariableLocation::Global, env, args)
 }
 
 
-pub fn builtin_put(env: &mut LEnv, arg: LVal) -> LVal {
-    builtin_var(VariableLocation::Local, env, arg)
+pub fn builtin_put(env: &mut LEnv, args: Vec<LVal>) -> LVal {
+    builtin_var(VariableLocation::Local, env, args)
 }
 
 
-pub fn builtin_eval(env: &mut LEnv, arg: LVal) -> LVal {
-    let mut args = arg.into_values();
-
+pub fn builtin_eval(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
     builtin_assert!("eval": args.len() == 1u);
     builtin_assert!("eval": args[0u] is qexpr);
 

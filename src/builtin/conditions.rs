@@ -23,30 +23,28 @@ impl fmt::Show for OrderingType {
 }
 
 
-pub fn builtin_lt(_: &mut LEnv, arg: LVal) -> LVal {
-    builtin_ord(OrderingType::Less, arg)
+pub fn builtin_lt(_: &mut LEnv, args: Vec<LVal>) -> LVal {
+    builtin_ord(OrderingType::Less, args)
 }
 
 
-pub fn builtin_le(_: &mut LEnv, arg: LVal) -> LVal {
-    builtin_ord(OrderingType::LessEqual, arg)
+pub fn builtin_le(_: &mut LEnv, args: Vec<LVal>) -> LVal {
+    builtin_ord(OrderingType::LessEqual, args)
 }
 
 
-pub fn builtin_ge(_: &mut LEnv, arg: LVal) -> LVal {
-    builtin_ord(OrderingType::GreaterEqual, arg)
+pub fn builtin_ge(_: &mut LEnv, args: Vec<LVal>) -> LVal {
+    builtin_ord(OrderingType::GreaterEqual, args)
 }
 
 
-pub fn builtin_gt(_: &mut LEnv, arg: LVal) -> LVal {
-    builtin_ord(OrderingType::Greater, arg)
+pub fn builtin_gt(_: &mut LEnv, args: Vec<LVal>) -> LVal {
+    builtin_ord(OrderingType::Greater, args)
 }
 
 
-pub fn builtin_ord(ord: OrderingType, arg: LVal) -> LVal {
+pub fn builtin_ord(ord: OrderingType, mut args: Vec<LVal>) -> LVal {
     use self::OrderingType::*;
-
-    let mut args = arg.into_values();
 
     builtin_assert!(ord: args.len() >= 2u);
     builtin_assert!(ord: args[*] is number);
@@ -86,20 +84,18 @@ impl fmt::Show for CmpType {
 }
 
 
-pub fn builtin_eq(_: &mut LEnv, arg: LVal) -> LVal {
-    builtin_cmp(CmpType::Eq, arg)
+pub fn builtin_eq(_: &mut LEnv, args: Vec<LVal>) -> LVal {
+    builtin_cmp(CmpType::Eq, args)
 }
 
 
-pub fn builtin_neq(_: &mut LEnv, arg: LVal) -> LVal {
-    builtin_cmp(CmpType::Neq, arg)
+pub fn builtin_neq(_: &mut LEnv, args: Vec<LVal>) -> LVal {
+    builtin_cmp(CmpType::Neq, args)
 }
 
 
-pub fn builtin_cmp(cmp: CmpType, arg: LVal) -> LVal {
+pub fn builtin_cmp(cmp: CmpType, args: Vec<LVal>) -> LVal {
     use self::CmpType::*;
-
-    let args = arg.into_values();
 
     builtin_assert!(cmp: args.len() == 2u);
 
@@ -113,9 +109,7 @@ pub fn builtin_cmp(cmp: CmpType, arg: LVal) -> LVal {
 }
 
 
-pub fn builtin_if(env: &mut LEnv, arg: LVal) -> LVal {
-    let mut args = arg.into_values();
-
+pub fn builtin_if(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
     builtin_assert!("if": args.len() >= 2u);
     builtin_assert!("if": args.len() <= 3u);
     builtin_assert!("if": args[0u] is number);
@@ -137,9 +131,7 @@ pub fn builtin_if(env: &mut LEnv, arg: LVal) -> LVal {
 }
 
 
-pub fn builtin_and(_: &mut LEnv, arg: LVal) -> LVal {
-    let args = arg.into_values();
-
+pub fn builtin_and(_: &mut LEnv, args: Vec<LVal>) -> LVal {
     builtin_assert!("and": args.len() == 2u);
     builtin_assert!("and": args[*] is number);
 
@@ -150,9 +142,7 @@ pub fn builtin_and(_: &mut LEnv, arg: LVal) -> LVal {
 }
 
 
-pub fn builtin_or(_: &mut LEnv, arg: LVal) -> LVal {
-    let args = arg.into_values();
-
+pub fn builtin_or(_: &mut LEnv, args: Vec<LVal>) -> LVal {
     builtin_assert!("or": args.len() == 2u);
     builtin_assert!("or": args[*] is number);
 
@@ -163,9 +153,7 @@ pub fn builtin_or(_: &mut LEnv, arg: LVal) -> LVal {
 }
 
 
-pub fn builtin_not(_: &mut LEnv, arg: LVal) -> LVal {
-    let args = arg.into_values();
-
+pub fn builtin_not(_: &mut LEnv, args: Vec<LVal>) -> LVal {
     builtin_assert!("not": args.len() == 1u);
     builtin_assert!("not": args[0u] is number);
 

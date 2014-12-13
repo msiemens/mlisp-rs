@@ -108,13 +108,13 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
         // Call a builtin
         LVal::Builtin(LBuiltin(f)) => {
             // Call with builtin operator
-            f(env, LVal::SExpr(values))
+            f(env, values)
         },
 
         // FIXME: Why is this needed? Why may a symbol not be already evaluated?
         LVal::Sym(ref name) => {
             if let LVal::Builtin(LBuiltin(f)) = env.get(name[]) {
-                f(env, LVal::SExpr(values))
+                f(env, values)
             }
             else {
                 err!("first element is not a function: {}", name)

@@ -42,7 +42,7 @@ macro_rules! lval_type_name(
 ///
 /// Used to implement PartialEq for the function pointer
 #[deriving(Clone)]
-pub struct LBuiltin(pub fn(& mut LEnv, LVal) -> LVal);
+pub struct LBuiltin(pub fn(& mut LEnv, Vec<LVal>) -> LVal);
 
 impl PartialEq for LBuiltin {
     fn eq(&self, other: &LBuiltin) -> bool {
@@ -61,6 +61,7 @@ pub enum LVal {
     Num(f64),
     Err(String),
     Sym(String),  // TODO: Use SharedString?
+    //Str(String),
     Function {
         env: LEnv,
         formals: Vec<LVal>,  // List of formal argument symbols
@@ -100,7 +101,7 @@ impl LVal {
     }
 
     /// Create a new function lval
-    pub fn func(f: fn(&mut LEnv, LVal) -> LVal) -> LVal {
+    pub fn func(f: fn(&mut LEnv, Vec<LVal>) -> LVal) -> LVal {
         LVal::Builtin(LBuiltin(f))
     }
 
@@ -221,6 +222,7 @@ impl LVal {
             LVal::Num(..)      => "a number",
             LVal::Err(..)      => "an error",
             LVal::Sym(..)      => "a symbol",
+            //LVal::Str(..)      => "a string",
             LVal::Function{..} => "a lambda",
             LVal::Builtin(..)  => "a builtin function",
             LVal::SExpr(..)    => "a s-expression",
