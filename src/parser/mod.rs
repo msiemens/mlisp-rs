@@ -1,6 +1,7 @@
 //! The Parser
 
 use std;
+use std::borrow::ToOwned;
 use std::collections::DList;
 use parser::ast::{Expr, ExprNode};
 use parser::tokens::{Token, SourceLocation};
@@ -60,7 +61,7 @@ macro_rules! unexpected(
     ($token:expr instead of $msg:expr @ $location:expr) => (
         return Err(ParserError::UnexpectedToken {
             found: $token.clone(),
-            expected: Some($msg.into_string()),
+            expected: Some($msg.to_owned()),
             location: $location
         })
     );
@@ -72,7 +73,7 @@ macro_rules! unexpected(
             location: $location
         })
     );
-)
+);
 
 // --- Parser -------------------------------------------------------------------
 
@@ -133,18 +134,18 @@ impl<'a> Parser<'a> {
     // --- Public methods -------------------------------------------------------
 
     /// Parse all the input
-    pub fn parse<'a>(source: &'a str, file: &'a str) -> ParserResult<ExprNode> {
+    pub fn parse(source: &'a str, file: &'a str) -> ParserResult<ExprNode> {
         let mut parser = try!(Parser::new(source, file));
         let location = parser.update_location();
         let mut values = vec![];
 
-        debug!("Starting parsing")
+        debug!("Starting parsing");
 
         while parser.token != Token::EOF {
             values.push(try!(parser.parse_expr()));
         }
 
-        debug!("Parsing finished")
+        debug!("Parsing finished");
 
         // Wrap everything in an SExpr, if what we parsed isn't already one
         if values.len() == 1 {

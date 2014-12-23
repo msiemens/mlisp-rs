@@ -74,7 +74,7 @@ macro_rules! builtin_assert(
         builtin_assert!($func: ASSERT TYPE: $args[$i], $i, $typ);
     };
 
-)
+);
 
 
 mod conditions;

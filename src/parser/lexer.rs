@@ -1,6 +1,7 @@
 //! Input tokenizer
 
 use std;
+use std::borrow::ToOwned;
 use std::rc::Rc;
 use parser::tokens::{Token, SourceLocation, dummy_source};
 use parser::util::{SharedString, rcstr, rcstring};
@@ -50,7 +51,7 @@ macro_rules! unknown_token(
             location: $location
         })
     )
-)
+);
 
 macro_rules! invalid_number(
     ($input:expr @ $location:expr) => (
@@ -59,7 +60,7 @@ macro_rules! invalid_number(
             location: $location
         })
     )
-)
+);
 
 // --- Lexer --------------------------------------------------------------------
 
@@ -134,7 +135,7 @@ impl<'a> FileLexer<'a> {
             let expect_str = String::from_chars(&[expect]).escape_default();
             let found_str = match self.curr {
                 Some(_) => format!("'{}'", self.curr_repr()),
-                None => "EOF".into_string()
+                None => "EOF".to_owned()
             };
 
             return Err(LexerError::UnexpectedChar {
@@ -164,14 +165,14 @@ impl<'a> FileLexer<'a> {
     fn collect(&mut self, cond: |&char| -> bool) -> SharedString {
         let mut chars = vec![];
 
-        debug!("start colleting")
+        debug!("start colleting");
 
         while let Some(c) = self.curr {
             if cond(&c) {
                 chars.push(c);
                 self.bump();
             } else {
-                debug!("colleting finished")
+                debug!("colleting finished");
                 break;
             }
         }
@@ -198,7 +199,7 @@ impl<'a> FileLexer<'a> {
         };
         let number = self.collect(|c| c.is_numeric() || *c == '.');
 
-        let number = if let Some(m) = from_str(number[]) { m }
+        let number = if let Some(m) = number.parse() { m }
                       else { invalid_number!(number @ self.get_source()) };
 
         Ok(Token::NUMBER(sign * number))
@@ -314,13 +315,13 @@ impl<'a> Lexer for FileLexer<'a> {
         // NOTE: We can't use `for c in self.iter` because then we can't
         //       access `self.iter` inside the body because it's borrowed.
         while !self.is_eof() {
-            debug!("Processing {}", self.curr)
+            debug!("Processing {}", self.curr);
 
             if let Some(t) = try!(self.read_token()) {
                 tokens.push(t);
             }
 
-            debug!("So far: {}", tokens)
+            debug!("So far: {}", tokens);
         }
 
         Ok(tokens)

@@ -4,6 +4,7 @@
 
 use std::mem;
 use std::fmt;
+use std::borrow::ToOwned;
 use lenv::LEnv;
 use parser::ast::{Expr, ExprNode};
 use util::{print_error, stringify_vec};
@@ -12,13 +13,13 @@ use util::{print_error, stringify_vec};
 /// Return an error
 macro_rules! err(
     ($msg:expr) => (
-        return LVal::err($msg.into_string())
+        return LVal::err($msg.into_cow().into_owned())
     );
 
     ($msg:expr, $( $args:expr ),* ) => (
         return LVal::err(format!($msg, $($args),* ))
     );
-)
+);
 
 
 macro_rules! lval_is(
@@ -26,7 +27,7 @@ macro_rules! lval_is(
     ($el:expr, qexpr)  => ( if let LVal::QExpr(..) = $el { true } else { false } );
     ($el:expr, sexpr)  => ( if let LVal::SExpr(..) = $el { true } else { false } );
     ($el:expr, string) => ( if let LVal::Str(..)   = $el { true } else { false } );
-)
+);
 
 macro_rules! lval_type_name(
     (number)   => ("a number");
@@ -37,14 +38,21 @@ macro_rules! lval_type_name(
     (builtin)  => ("a builtin function");
     (sexpr)    => ("a s-expression");
     (qexpr)    => ("a q-expression");
-)
+);
 
 
 /// A builtin function
 ///
 /// Used to implement PartialEq for the function pointer
-#[deriving(Clone)]
-pub struct LBuiltin(pub fn(& mut LEnv, Vec<LVal>) -> LVal);
+pub struct LBuiltin(pub fn(&mut LEnv, Vec<LVal>) -> LVal);
+
+impl Clone for LBuiltin {
+    fn clone(&self) -> LBuiltin {
+        match *self {
+            LBuiltin(ptr) => LBuiltin(ptr),
+        }
+    }
+}
 
 impl PartialEq for LBuiltin {
     fn eq(&self, other: &LBuiltin) -> bool {
@@ -90,12 +98,12 @@ impl LVal {
 
     /// Create a new string lval
     pub fn str(s: &str) -> LVal {
-        LVal::Str(s.into_string())
+        LVal::Str(s.to_owned())
     }
 
     /// Create a new symbol lval
     pub fn sym(symbol: &str) -> LVal {
-        LVal::Sym(symbol.into_string())
+        LVal::Sym(symbol.to_owned())
     }
 
     // Create a new lambda lval
