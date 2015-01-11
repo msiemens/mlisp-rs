@@ -1,4 +1,4 @@
-#![macro_escape]
+#![macro_use]
 
 //! LVal: The basic object type
 
@@ -13,7 +13,7 @@ use util::{print_error, stringify_vec};
 /// Return an error
 macro_rules! err(
     ($msg:expr) => (
-        return LVal::err($msg.into_cow().into_owned())
+        return LVal::err($msg.to_string())
     );
 
     ($msg:expr, $( $args:expr ),* ) => (
@@ -66,7 +66,7 @@ impl PartialEq for LBuiltin {
 
 
 /// A basic object
-#[deriving(PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum LVal {
     Num(f64),
     Err(String),
@@ -134,8 +134,8 @@ impl LVal {
     pub fn from_ast(ast: ExprNode) -> LVal {
         match ast.value {
             Expr::Number(i) => LVal::num(i as f64),
-            Expr::String(s) => LVal::str(s[]),
-            Expr::Symbol(s) => LVal::sym(s[]),
+            Expr::String(s) => LVal::str(&**s),
+            Expr::Symbol(s) => LVal::sym(&**s),
             Expr::SExpr(exprs) => {
                 let mut sexpr = LVal::sexpr();
                 for child in exprs.into_iter() {
@@ -258,7 +258,7 @@ impl LVal {
     pub fn to_string(&self, env: &LEnv) -> String {
         match *self {
             LVal::Sym(ref name) => {
-                match env.get(name[]) {
+                match env.get(&**name) {
                     LVal::Err(..) => name.clone(),
                     value         => value.to_string(env)
                 }
@@ -292,7 +292,7 @@ impl LVal {
 
     pub fn print(&self, env: &LEnv) {
         if let LVal::Err(ref msg) = *self {
-            print_error(msg[]);
+            print_error(&**msg);
         } else {
             print!("{}", self.to_string(env));
         }
@@ -306,7 +306,7 @@ impl LVal {
 
 
 // Used for debugging and when the environment is not available
-impl fmt::Show for LVal {
+impl fmt::String for LVal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LVal::Num(i)            => write!(f, "{}", i),
@@ -325,5 +325,11 @@ impl fmt::Show for LVal {
                 write!(f, "{{{}}}", stringify_vec(values))
             }
         }
+    }
+}
+
+impl fmt::Show for LVal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self)
     }
 }

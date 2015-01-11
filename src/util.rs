@@ -1,5 +1,5 @@
 use term;
-use std::fmt::Show;
+use std::fmt;
 
 
 pub fn print_error(msg: &str) {
@@ -11,7 +11,7 @@ pub fn print_error(msg: &str) {
 }
 
 
-pub fn stringify_vec<T: Show>(v: &Vec<T>) -> String {
+pub fn stringify_vec<T: fmt::String>(v: &Vec<T>) -> String {
     v.iter()
         .map(|v| format!("{}", v))
         .collect::<Vec<_>>()

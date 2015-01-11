@@ -7,12 +7,12 @@ use parser::Parser;
 
 
 pub fn builtin_lambda(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("\\": args.len() == 2u);
-    builtin_assert!("\\": args[0u] is qexpr);
-    builtin_assert!("\\": args[1u] is qexpr);
+    builtin_assert!("\\"; args.len() == 2us);
+    builtin_assert!("\\"; args[0us] is qexpr);
+    builtin_assert!("\\"; args[1us] is qexpr);
 
-    let formals = args.remove(0).unwrap();
-    let body    = args.remove(0).unwrap();
+    let formals = args.remove(0);
+    let body    = args.remove(0);
 
     for argument in formals.as_values().iter() {
         if let LVal::Sym(_) = *argument {}
@@ -30,7 +30,7 @@ enum VariableLocation {
     Global
 }
 
-impl fmt::Show for VariableLocation {
+impl fmt::String for VariableLocation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             VariableLocation::Local => write!(f, "{}", "="),
@@ -41,10 +41,10 @@ impl fmt::Show for VariableLocation {
 
 
 pub fn builtin_var(loc: VariableLocation, env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!(loc: args.len() >= 1u);
-    builtin_assert!(loc: args[0u] is qexpr);
+    builtin_assert!(loc; args.len() >= 1us);
+    builtin_assert!(loc; args[0us] is qexpr);
 
-    let symbols = args.remove(0).unwrap().into_values();
+    let symbols = args.remove(0).into_values();
 
     // Ensure all elements of first list are symbols
     for symbol in symbols.iter() {
@@ -86,11 +86,11 @@ pub fn builtin_put(env: &mut LEnv, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_eval(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("eval": args.len() == 1u);
-    builtin_assert!("eval": args[0u] is qexpr);
+    builtin_assert!("eval"; args.len() == 1us);
+    builtin_assert!("eval"; args[0us] is qexpr);
 
     // Take 1st argument
-    let qexpr = args.remove(0).unwrap();
+    let qexpr = args.remove(0);
 
     // Evaluate it
     eval(env, LVal::SExpr(qexpr.into_values()))
@@ -98,18 +98,18 @@ pub fn builtin_eval(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_load(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("load": args.len() == 1u);
-    builtin_assert!("load": args[0u] is string);
+    builtin_assert!("load"; args.len() == 1us);
+    builtin_assert!("load"; args[0us] is string);
 
     // Read the file
-    let filename = args.remove(0).unwrap().into_str();
+    let filename = args.remove(0).into_str();
     let contents = match File::open(&Path::new(&*filename)).read_to_string() {
         Ok(s) => s,
         Err(err) => return LVal::err(format!("{}", err))
     };
 
     // Parse it
-    let ast = match Parser::parse(contents[], &*filename) {
+    let ast = match Parser::parse(&*contents, &*filename) {
         Ok(lval) => lval,
         Err(err) => return LVal::err(format!("{}", err))
     };
@@ -129,18 +129,18 @@ pub fn builtin_load(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_error(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("error": args.len() == 1u);
-    builtin_assert!("error": args[0u] is string);
+    builtin_assert!("error"; args.len() == 1us);
+    builtin_assert!("error"; args[0us] is string);
 
-    let msg = args.remove(0).unwrap().into_str();
+    let msg = args.remove(0).into_str();
     LVal::Err(msg)
 }
 
 
 pub fn builtin_println(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("println": args.len() == 1u);
+    builtin_assert!("println"; args.len() == 1us);
 
-    let lval = args.remove(0).unwrap();
+    let lval = args.remove(0);
     lval.println(env);
 
     LVal::sexpr()

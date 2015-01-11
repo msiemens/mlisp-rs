@@ -6,7 +6,7 @@ use parser::util::{rcstr, SharedString};
 // --- Token --------------------------------------------------------------------
 
 /// A token
-#[deriving(Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Token {
     LPAREN,
     RPAREN,
@@ -21,7 +21,7 @@ pub enum Token {
     PLACEHOLDER
 }
 
-impl fmt::Show for Token {
+impl fmt::String for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Token::LPAREN        => write!(f, "("),
@@ -39,17 +39,23 @@ impl fmt::Show for Token {
     }
 }
 
+impl fmt::Show for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
 
 // --- Source location ----------------------------------------------------------
 
 /// Represntation of a location in the input
-#[deriving(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub struct SourceLocation {
     pub filename: SharedString,
-    pub lineno: uint
+    pub lineno: usize
 }
 
-impl fmt::Show for SourceLocation {
+impl fmt::String for SourceLocation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}", self.filename, self.lineno)
     }

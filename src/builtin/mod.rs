@@ -8,7 +8,7 @@ use builtin::math::*;
 
 macro_rules! builtin_assert(
 
-    ($func:expr: ASSERT LENGTH EQ, $length:expr, $expected:expr) => {
+    ($func:expr; ASSERT LENGTH EQ, $length:expr, $expected:expr) => {
         if $length < $expected {
             err!("`{}` called with too few arguments: expected {}, got {}",
                         $func, $expected, $length)
@@ -18,14 +18,14 @@ macro_rules! builtin_assert(
         }
     };
 
-    ($func:expr: ASSERT LENGTH GE, $length:expr, $expected:expr) => {
+    ($func:expr; ASSERT LENGTH GE, $length:expr, $expected:expr) => {
         if $length < $expected {
             err!("`{}` called with too few arguments: expected at least {}, got {}",
                         $func, $expected, $length)
         }
     };
 
-    ($func:expr: ASSERT LENGTH LE, $length:expr, $expected:expr) => {
+    ($func:expr; ASSERT LENGTH LE, $length:expr, $expected:expr) => {
         if $length > $expected {
             err!("`{}` called with too few arguments: expected at least {}, got {}",
                         $func, $expected, $length)
@@ -33,7 +33,7 @@ macro_rules! builtin_assert(
     };
 
     // FIXME: Find a solution without typ_name
-    ($func:expr: ASSERT TYPE: $element:expr, $pos:expr, $typ:ident) => {
+    ($func:expr; ASSERT TYPE: $element:expr, $pos:expr, $typ:ident) => {
         if !lval_is!($element, $typ) {
             err!("`{}` called with wrong type for argument {}: expected {}, got {}: `{}`",
                 //$func, $pos + 1, $typ_name, $element.type_name(), $element)
@@ -43,35 +43,35 @@ macro_rules! builtin_assert(
 
     // --------------------------------------------------------------------------
 
-    ($func:expr: $args:ident . len() == $expected:expr) => {
-        builtin_assert!($func: ASSERT LENGTH EQ, $args.len(), $expected)
+    ($func:expr; $args:ident . len() == $expected:expr) => {
+        builtin_assert!($func; ASSERT LENGTH EQ, $args.len(), $expected)
     };
 
-    ($func:expr: $args:ident . len() >= $expected:expr) => {
-        builtin_assert!($func: ASSERT LENGTH GE, $args.len(), $expected)
+    ($func:expr; $args:ident . len() >= $expected:expr) => {
+        builtin_assert!($func; ASSERT LENGTH GE, $args.len(), $expected)
     };
 
-    ($func:expr: $args:ident . len() <= $expected:expr) => {
-        builtin_assert!($func: ASSERT LENGTH LE, $args.len(), $expected)
+    ($func:expr; $args:ident . len() <= $expected:expr) => {
+        builtin_assert!($func; ASSERT LENGTH LE, $args.len(), $expected)
     };
 
-    ($func:expr: $args:ident [*] is $typ:ident) => {
+    ($func:expr; $args:ident [*] is $typ:ident) => {
         for (i, arg) in $args.iter().enumerate() {
-            builtin_assert!($func: ASSERT TYPE: *arg, i, $typ);
+            builtin_assert!($func; ASSERT TYPE: *arg, i, $typ);
         }
     };
 
-    ($func:expr: $args:ident [ $i:expr ] != {}) => {
+    ($func:expr; $args:ident [ $i:expr ] != {}) => {
         {
-            builtin_assert!($func: ASSERT TYPE: $args[$i], $i, qexpr);
+            builtin_assert!($func; ASSERT TYPE: $args[$i], $i, qexpr);
             if $args[$i].as_values().len() == 0 {
                 err!("`{}` called with empty q-expr", $func)
             }
         }
     };
 
-    ($func:expr: $args:ident [ $i:expr ] is $typ:ident) => {
-        builtin_assert!($func: ASSERT TYPE: $args[$i], $i, $typ);
+    ($func:expr; $args:ident [ $i:expr ] is $typ:ident) => {
+        builtin_assert!($func; ASSERT TYPE: $args[$i], $i, $typ);
     };
 
 );

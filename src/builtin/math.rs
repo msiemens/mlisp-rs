@@ -3,13 +3,13 @@ use lval::LVal;
 use lenv::LEnv;
 
 
-#[deriving(PartialEq)]
+#[derive(PartialEq)]
 enum ArithmeticOp {
     ADD, SUB, MUL, DIV, MOD,
     MIN, MAX
 }
 
-impl fmt::Show for ArithmeticOp {
+impl fmt::String for ArithmeticOp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ArithmeticOp::*;
 
@@ -30,18 +30,18 @@ fn builtin_op(op: ArithmeticOp, mut args: Vec<LVal>) -> LVal {
     use self::ArithmeticOp::*;
 
     // Make sure all arguments are numbers
-    builtin_assert!(op: args[*] is number);
-    builtin_assert!(op: args.len() >= 1u);
+    builtin_assert!(op; args[*] is number);
+    builtin_assert!(op; args.len() >= 1us);
 
     //let mut x = *args[0].as_num();
-    let mut x = args.remove(0).unwrap().into_num();
+    let mut x = args.remove(0).into_num();
 
     // Perform unary minus operation
     if op == SUB && args.len() == 0 {
         return LVal::num(-1.0 * x)
     }
 
-    builtin_assert!(op: args.len() >= 1u);
+    builtin_assert!(op; args.len() >= 1us);
 
     for arg in args.into_iter() {
         let y = arg.into_num();

@@ -3,14 +3,14 @@ use lenv::LEnv;
 
 
 pub fn builtin_head(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("head": args.len() == 1u);
-    builtin_assert!("head": args[0u] != {});
+    builtin_assert!("head"; args.len() == 1us);
+    builtin_assert!("head"; args[0us] != {});
 
     // Take 1st argument
-    let mut qexpr = args.remove(0).unwrap().into_values();
+    let mut qexpr = args.remove(0).into_values();
 
     // Take 1st element and return it
-    for _ in range(0, qexpr.len() - 1) {
+    for _ in 0 .. qexpr.len() - 1 {
         qexpr.remove(1);
     }
 
@@ -19,11 +19,11 @@ pub fn builtin_head(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_tail(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("tail": args.len() == 1u);
-    builtin_assert!("tail": args[0u] != {});
+    builtin_assert!("tail"; args.len() == 1us);
+    builtin_assert!("tail"; args[0us] != {});
 
     // Take 1st argument
-    let qexpr = args.remove(0).unwrap();
+    let qexpr = args.remove(0);
 
     // Remove 1st element and return the tail
     LVal::QExpr(qexpr.into_values().into_iter().skip(1).collect())
@@ -37,9 +37,9 @@ pub fn builtin_list(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_join(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("join": args[*] is qexpr);
+    builtin_assert!("join"; args[*] is qexpr);
 
-    let mut joined = args.remove(0).unwrap();
+    let mut joined = args.remove(0);
 
     for arg in args.into_iter() {
         joined.extend(arg);
@@ -50,11 +50,11 @@ pub fn builtin_join(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_cons(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("cons": args.len() == 2u);
-    builtin_assert!("cons": args[1u] is qexpr);
+    builtin_assert!("cons"; args.len() == 2us);
+    builtin_assert!("cons"; args[1us] is qexpr);
 
     let mut value = LVal::qexpr();
-    value.append(args.remove(0).unwrap());
+    value.append(args.remove(0));
     value.extend(LVal::QExpr(args));
 
     value

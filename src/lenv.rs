@@ -44,13 +44,13 @@ impl LEnv {
     pub fn look_up(&self, search: &LVal) -> Option<&str> {
         self.contents.iter()
             .find(|&(_, value)| value == search)
-            .map(|(key, _)| key[])
+            .map(|(key, _)| &**key)
     }
 }
 
-impl fmt::Show for LEnv {
+impl fmt::String for LEnv {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.contents)
+        write!(f, "{:?}", self.contents)
     }
 }
 

@@ -11,7 +11,7 @@ enum OrderingType {
     Greater
 }
 
-impl fmt::Show for OrderingType {
+impl fmt::String for OrderingType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             OrderingType::Less         => write!(f, "{}", "<"),
@@ -46,8 +46,8 @@ pub fn builtin_gt(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 pub fn builtin_ord(ord: OrderingType, args: Vec<LVal>) -> LVal {
     use self::OrderingType::*;
 
-    builtin_assert!(ord: args.len() >= 2u);
-    builtin_assert!(ord: args[*] is number);
+    builtin_assert!(ord; args.len() >= 2us);
+    builtin_assert!(ord; args[*] is number);
 
     let mut result = true;
     let mut x = *args[0].as_num();
@@ -74,7 +74,7 @@ enum CmpType {
     Neq
 }
 
-impl fmt::Show for CmpType {
+impl fmt::String for CmpType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             CmpType::Eq  => write!(f, "{}", "=="),
@@ -97,7 +97,7 @@ pub fn builtin_neq(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 pub fn builtin_cmp(cmp: CmpType, args: Vec<LVal>) -> LVal {
     use self::CmpType::*;
 
-    builtin_assert!(cmp: args.len() == 2u);
+    builtin_assert!(cmp; args.len() == 2us);
 
     let ref o1 = args[0];
     let ref o2 = args[1];
@@ -110,19 +110,19 @@ pub fn builtin_cmp(cmp: CmpType, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_if(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("if": args.len() >= 2u);
-    builtin_assert!("if": args.len() <= 3u);
-    builtin_assert!("if": args[0u] is number);
-    builtin_assert!("if": args[1u] is qexpr);
+    builtin_assert!("if"; args.len() >= 2us);
+    builtin_assert!("if"; args.len() <= 3us);
+    builtin_assert!("if"; args[0us] is number);
+    builtin_assert!("if"; args[1us] is qexpr);
 
     if args.len() == 3 {
-        builtin_assert!("if": args[2u] is qexpr);
+        builtin_assert!("if"; args[2us] is qexpr);
     }
 
-    let test = args.remove(0).unwrap().into_num();
-    let consequence = args.remove(0).unwrap();
+    let test = args.remove(0).into_num();
+    let consequence = args.remove(0);
     let alternative = if args.len() == 1 {
-        args.remove(0).unwrap()
+        args.remove(0)
     } else {
         LVal::sexpr()
     };
@@ -138,8 +138,8 @@ pub fn builtin_if(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_and(_: &mut LEnv, args: Vec<LVal>) -> LVal {
-    builtin_assert!("and": args.len() == 2u);
-    builtin_assert!("and": args[*] is number);
+    builtin_assert!("and"; args.len() == 2us);
+    builtin_assert!("and"; args[*] is number);
 
     let n1 = (*args[0].as_num()) != 0.;
     let n2 = (*args[1].as_num()) != 0.;
@@ -149,8 +149,8 @@ pub fn builtin_and(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_or(_: &mut LEnv, args: Vec<LVal>) -> LVal {
-    builtin_assert!("or": args.len() == 2u);
-    builtin_assert!("or": args[*] is number);
+    builtin_assert!("or"; args.len() == 2us);
+    builtin_assert!("or"; args[*] is number);
 
     let n1 = (*args[0].as_num()) != 0.;
     let n2 = (*args[1].as_num()) != 0.;
@@ -160,8 +160,8 @@ pub fn builtin_or(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_not(_: &mut LEnv, args: Vec<LVal>) -> LVal {
-    builtin_assert!("not": args.len() == 1u);
-    builtin_assert!("not": args[0u] is number);
+    builtin_assert!("not"; args.len() == 1us);
+    builtin_assert!("not"; args[0us] is number);
 
     let n = (*args[0].as_num()) != 0.;
 

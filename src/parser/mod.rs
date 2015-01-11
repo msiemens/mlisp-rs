@@ -25,7 +25,7 @@ pub enum ParserError {
     FromLexer(LexerError)
 }
 
-impl std::fmt::Show for ParserError {
+impl std::fmt::String for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             ParserError::UnexpectedToken { ref found, ref expected, ref location } => {
@@ -50,7 +50,7 @@ impl std::error::FromError<LexerError> for ParserError {
 }
 
 macro_rules! unexpected(
-    ($token:expr @ $location:stmt) => (
+    ($token:expr; $location:stmt) => (
         return Err(ParserError::UnexpectedToken {
             found: $token.clone(),
             expected: None,
@@ -58,7 +58,7 @@ macro_rules! unexpected(
         })
     );
 
-    ($token:expr instead of $msg:expr @ $location:expr) => (
+    ($token:expr, instead of $msg:expr; $location:expr) => (
         return Err(ParserError::UnexpectedToken {
             found: $token.clone(),
             expected: Some($msg.to_owned()),
@@ -66,7 +66,7 @@ macro_rules! unexpected(
         })
     );
 
-    ($token:expr instead of token: $exp_token:expr @ $location:expr) => (
+    ($token:expr, instead of token: $exp_token:expr; $location:expr) => (
         return Err(ParserError::UnexpectedToken {
             found: $token.clone(),
             expected: Some(format!("`{}`", $exp_token)),
@@ -90,7 +90,7 @@ impl<'a> Parser<'a> {
     // Note: Constructors are private!
 
     fn new(source: &'a str, file: &'a str) -> ParserResult<Parser<'a>> {
-        Parser::with_lexer(box FileLexer::new(source, file))
+        Parser::with_lexer(Box::new(FileLexer::new(source, file)))
     }
 
     fn with_lexer(lx: Box<Lexer + 'a>) -> ParserResult<Parser<'a>> {
@@ -127,7 +127,7 @@ impl<'a> Parser<'a> {
             try!(self.bump());
             Ok(())
         } else {
-            unexpected!(self.token instead of token: tok @ self.location.clone())
+            unexpected!(self.token, instead of token: tok; self.location.clone())
         }
     }
 
@@ -162,7 +162,7 @@ impl<'a> Parser<'a> {
 
         let number = match self.token {
             Token::NUMBER(i) => Expr::Number(i),
-            _ => unexpected!(self.token instead of "a number" @ location)
+            _ => unexpected!(self.token, instead of "a number"; location)
         };
         try!(self.bump());
 
@@ -175,7 +175,7 @@ impl<'a> Parser<'a> {
 
         let string = match self.token {
             Token::STRING(ref s) => Expr::String(s.clone()),
-            _ => unexpected!(self.token instead of "a string" @ location)
+            _ => unexpected!(self.token, instead of "a string"; location)
         };
         try!(self.bump());
 
@@ -188,7 +188,7 @@ impl<'a> Parser<'a> {
 
         let symbol = match self.token {
             Token::SYMBOL(ref s) => Expr::Symbol(s.clone()),
-            _ => unexpected!(self.token instead of "a symbol" @ location)
+            _ => unexpected!(self.token, instead of "a symbol"; location)
         };
         try!(self.bump());
 
@@ -244,7 +244,7 @@ impl<'a> Parser<'a> {
             Token::LPAREN     => try!(self.parse_sexpr()),
             Token::LBRACE     => try!(self.parse_qexpr()),
 
-            _ => unexpected!(self.token instead of "an expression" @ self.location.clone())
+            _ => unexpected!(self.token, instead of "an expression"; self.location.clone())
         };
 
         Ok(stmt)
@@ -263,7 +263,7 @@ mod tests {
 
     use super::*;
 
-    fn parse<'a, T>(toks: Vec<Token>, f: |&mut Parser<'a>| -> T) -> T {
+    fn parse<'a, T>(toks: Vec<Token>, f: F) -> T where F: Fn(&mut Parser<'a>) -> T {
         f(&mut Parser::with_lexer(box toks as Box<Lexer>).unwrap())
     }
 

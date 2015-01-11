@@ -9,7 +9,7 @@ use util::stringify_vec;
 // --- AST Node: Expression -----------------------------------------------------
 
 /// An expression AST node
-#[deriving(PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub struct ExprNode {
     /// The expression's value
     pub value: Expr,
@@ -27,7 +27,7 @@ impl ExprNode {
     }
 }
 
-impl fmt::Show for ExprNode {
+impl fmt::String for ExprNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.value)
     }
@@ -35,7 +35,7 @@ impl fmt::Show for ExprNode {
 
 // --- AST Node: Expression: Values ---------------------------------------------
 
-#[deriving(PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum Expr {
     /// A SExpr
     SExpr(Vec<ExprNode>),
@@ -53,7 +53,7 @@ pub enum Expr {
     Number(f64)
 }
 
-impl fmt::Show for Expr {
+impl fmt::String for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Expr::Number(i)          => write!(f, "{}", i),

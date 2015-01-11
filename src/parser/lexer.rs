@@ -27,7 +27,7 @@ pub enum LexerError {
     }
 }
 
-impl std::fmt::Show for LexerError {
+impl std::fmt::String for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             LexerError::UnexpectedChar { ref expected, ref found, ref location } => {
@@ -45,7 +45,7 @@ impl std::fmt::Show for LexerError {
 }
 
 macro_rules! unknown_token(
-    ($token:expr @ $location:expr) => (
+    ($token:expr; $location:expr) => (
         return Err(LexerError::UnknownToken {
             token: $token.clone(),
             location: $location
@@ -54,7 +54,7 @@ macro_rules! unknown_token(
 );
 
 macro_rules! invalid_number(
-    ($input:expr @ $location:expr) => (
+    ($input:expr; $location:expr) => (
         return Err(LexerError::InvalidInteger {
             input: $input.clone(),
             location: $location
@@ -80,10 +80,10 @@ pub trait Lexer {
 pub struct FileLexer<'a> {
     source: &'a str,
     file: SharedString,
-    len: uint,
-    pos: uint,
+    len: usize,
+    pos: usize,
     curr: Option<char>,
-    lineno: uint
+    lineno: usize
 }
 
 impl<'a> FileLexer<'a> {
@@ -110,7 +110,7 @@ impl<'a> FileLexer<'a> {
         self.curr = self.nextch();
         self.pos += 1;
 
-        debug!("Moved on to {}", self.curr)
+        debug!("Moved on to {:?}", self.curr)
     }
 
     /// Get the next char if possible
@@ -132,7 +132,7 @@ impl<'a> FileLexer<'a> {
 
     fn expect(&mut self, expect: char) -> LexerResult<()>  {
         if self.curr != Some(expect) {
-            let expect_str = String::from_chars(&[expect]).escape_default();
+            let expect_str = [expect].iter().cloned().collect::<String>().escape_default();
             let found_str = match self.curr {
                 Some(_) => format!("'{}'", self.curr_repr()),
                 None => "EOF".to_owned()
@@ -154,7 +154,7 @@ impl<'a> FileLexer<'a> {
     fn curr_repr(&self) -> SharedString {
         match self.curr {
             Some(c) => {
-                Rc::new(String::from_chars(&[c]).escape_default())
+                Rc::new([c].iter().cloned().collect::<String>().escape_default())
             },
             None => rcstr("EOF")
         }
@@ -162,7 +162,7 @@ impl<'a> FileLexer<'a> {
 
 
     /// Collect a series of chars starting at the current character
-    fn collect(&mut self, cond: |&char| -> bool) -> SharedString {
+    fn collect<F>(&mut self, cond: F) -> SharedString where F: Fn(&char) -> bool {
         let mut chars = vec![];
 
         debug!("start colleting");
@@ -177,10 +177,10 @@ impl<'a> FileLexer<'a> {
             }
         }
 
-        Rc::new(String::from_chars(&*chars))
+        Rc::new(chars.iter().cloned().collect::<String>())
     }
 
-    fn eat_all(&mut self, cond: |&char| -> bool) {
+    fn eat_all<F>(&mut self, cond: F) where F: Fn(&char) -> bool {
         while let Some(c) = self.curr {
             if cond(&c) { self.bump(); }
             else { break; }
@@ -200,7 +200,7 @@ impl<'a> FileLexer<'a> {
         let number = self.collect(|c| c.is_numeric() || *c == '.');
 
         let number = if let Some(m) = number.parse() { m }
-                      else { invalid_number!(number @ self.get_source()) };
+                      else { invalid_number!(number; self.get_source()) };
 
         Ok(Token::NUMBER(sign * number))
     }
@@ -232,7 +232,7 @@ impl<'a> FileLexer<'a> {
 
         try!(self.expect('"'));
 
-        let string = String::from_chars(&*string)
+        let string = string.iter().cloned().collect::<String>()
             .replace("\\n", "\n")
             .replace("\\r", "\r")
             .replace("\\t", "\t")
@@ -277,7 +277,7 @@ impl<'a> FileLexer<'a> {
                 return Ok(None);
             },
             _ => {
-                unknown_token!(self.curr_repr() @ self.get_source())
+                unknown_token!(self.curr_repr(); self.get_source())
                 // UNKNOWN(format!("{}", c).into_string())
             }
         };
@@ -315,13 +315,13 @@ impl<'a> Lexer for FileLexer<'a> {
         // NOTE: We can't use `for c in self.iter` because then we can't
         //       access `self.iter` inside the body because it's borrowed.
         while !self.is_eof() {
-            debug!("Processing {}", self.curr);
+            debug!("Processing {:?}", self.curr);
 
             if let Some(t) = try!(self.read_token()) {
                 tokens.push(t);
             }
 
-            debug!("So far: {}", tokens);
+            debug!("So far: {:?}", tokens);
         }
 
         Ok(tokens)
@@ -335,17 +335,15 @@ impl Lexer for Vec<Token> {
     }
 
     fn next_token(&mut self) -> LexerResult<Token> {
-        match self.remove(0) {
-            Some(tok) => Ok(tok),
-            None => Ok(Token::EOF)
+        if self.len() >= 1 {
+            Ok(self.remove(0))
+        } else {
+            Ok(Token::EOF)
         }
     }
 
     fn tokenize(&mut self) -> LexerResult<Vec<Token>> {
-        let mut v = vec![];
-        v.push_all(self[]);
-
-        Ok(v)
+        Ok(self.iter().cloned().collect())
     }
 }
 

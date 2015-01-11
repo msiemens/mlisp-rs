@@ -7,7 +7,7 @@ use util::stringify_vec;
 pub fn eval(env: &mut LEnv, node: LVal) -> LVal {
     match node {
         LVal::SExpr(_) => eval_sexpr(env, node),
-        LVal::Sym(ref name) => env.get(name[]),
+        LVal::Sym(ref name) => env.get(&**name),
         node => node
     }
 }
@@ -35,11 +35,11 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
 
     // Handle single expression: Return the value itself
     if values.len() == 1 {
-        return values.remove(0).unwrap()
+        return values.remove(0)
     }
 
     // Handle function calls
-    match values.remove(0).unwrap() {
+    match values.remove(0) {
 
         // Call a lambda function
         LVal::Function {
@@ -58,7 +58,7 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
                          stringify_vec(&formals), stringify_vec(&body), given, total)
                 }
 
-                let symbol = formals.remove(0).unwrap();
+                let symbol = formals.remove(0);
 
                 // Process varargs
                 if *symbol.as_sym() == "..." {
@@ -67,11 +67,11 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
                     }
 
                     // Bind vararg
-                    lenv.put(formals.remove(0).unwrap(), LVal::QExpr(values));
+                    lenv.put(formals.remove(0), LVal::QExpr(values));
                     break
                 }
 
-                let value = values.remove(0).unwrap();
+                let value = values.remove(0);
                 lenv.put(symbol, value);
             }
 
@@ -84,7 +84,7 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
                 // Delete `...`
                 formals.remove(0);
 
-                let symbol = formals.remove(0).unwrap();
+                let symbol = formals.remove(0);
                 let value = LVal::qexpr();
 
                 lenv.put(symbol, value);
@@ -113,7 +113,7 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
 
         // FIXME: Why is this needed? Why may a symbol not be already evaluated?
         LVal::Sym(ref name) => {
-            if let LVal::Builtin(LBuiltin(f)) = env.get(name[]) {
+            if let LVal::Builtin(LBuiltin(f)) = env.get(&**name) {
                 f(env, values)
             }
             else {
