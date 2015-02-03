@@ -134,11 +134,11 @@ impl LVal {
     pub fn from_ast(ast: ExprNode) -> LVal {
         match ast.value {
             Expr::Number(i) => LVal::num(i as f64),
-            Expr::String(s) => LVal::str(&**s),
-            Expr::Symbol(s) => LVal::sym(&**s),
+            Expr::String(s) => LVal::str(&s),
+            Expr::Symbol(s) => LVal::sym(&s),
             Expr::SExpr(exprs) => {
                 let mut sexpr = LVal::sexpr();
-                for child in exprs.into_iter() {
+                for child in exprs {
                     sexpr.append(LVal::from_ast(child));
                 }
 
@@ -146,7 +146,7 @@ impl LVal {
             },
             Expr::QExpr(exprs) => {
                 let mut qexpr = LVal::qexpr();
-                for child in exprs.into_iter() {
+                for child in exprs {
                     qexpr.append(LVal::from_ast(child));
                 }
 
@@ -258,7 +258,7 @@ impl LVal {
     pub fn to_string(&self, env: &LEnv) -> String {
         match *self {
             LVal::Sym(ref name) => {
-                match env.get(&**name) {
+                match env.get(&name) {
                     LVal::Err(..) => name.clone(),
                     value         => value.to_string(env)
                 }
@@ -292,7 +292,7 @@ impl LVal {
 
     pub fn print(&self, env: &LEnv) {
         if let LVal::Err(ref msg) = *self {
-            print_error(&**msg);
+            print_error(&msg);
         } else {
             print!("{}", self.to_string(env));
         }
@@ -306,7 +306,7 @@ impl LVal {
 
 
 // Used for debugging and when the environment is not available
-impl fmt::String for LVal {
+impl fmt::Display for LVal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LVal::Num(i)            => write!(f, "{}", i),
@@ -328,7 +328,7 @@ impl fmt::String for LVal {
     }
 }
 
-impl fmt::Show for LVal {
+impl fmt::Debug for LVal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self)
     }

@@ -9,7 +9,7 @@ enum ArithmeticOp {
     MIN, MAX
 }
 
-impl fmt::String for ArithmeticOp {
+impl fmt::Display for ArithmeticOp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ArithmeticOp::*;
 
@@ -43,7 +43,7 @@ fn builtin_op(op: ArithmeticOp, mut args: Vec<LVal>) -> LVal {
 
     builtin_assert!(op; args.len() >= 1us);
 
-    for arg in args.into_iter() {
+    for arg in args {
         let y = arg.into_num();
 
         x = match op {
@@ -115,7 +115,7 @@ mod test {
             builtin_op(ArithmeticOp::ADD, vec![
                 LVal::num(2.0)
             ]),
-            LVal::err("`+` called with too few arguments: expected at least 1, got 0".into_string())
+            LVal::err("`+` called with too few arguments: expected at least 1, got 0".to_string())
         )
     }
 

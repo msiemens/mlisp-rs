@@ -7,7 +7,7 @@ use util::stringify_vec;
 pub fn eval(env: &mut LEnv, node: LVal) -> LVal {
     match node {
         LVal::SExpr(_) => eval_sexpr(env, node),
-        LVal::Sym(ref name) => env.get(&**name),
+        LVal::Sym(ref name) => env.get(&name),
         node => node
     }
 }
@@ -22,7 +22,7 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
         .collect();
 
     // TODO: Return early if error is found instead of checking here
-    for val in values.iter() {
+    for val in &values {
         if let LVal::Err(..) = *val {
             return val.clone()
         }
@@ -113,7 +113,7 @@ fn eval_sexpr(env: &mut LEnv, node: LVal) -> LVal {
 
         // FIXME: Why is this needed? Why may a symbol not be already evaluated?
         LVal::Sym(ref name) => {
-            if let LVal::Builtin(LBuiltin(f)) = env.get(&**name) {
+            if let LVal::Builtin(LBuiltin(f)) = env.get(&name) {
                 f(env, values)
             }
             else {
@@ -141,7 +141,7 @@ mod test {
                 LVal::num(2.0),
                 LVal::num(2.0),
             ])),
-            LVal::err("first element is not a function but a number: `2`".into_string())
+            LVal::err("first element is not a function but a number: `2`".to_string())
         )
     }
 }

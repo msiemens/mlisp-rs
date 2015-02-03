@@ -1,5 +1,5 @@
 use std::fmt;
-use std::io::File;
+use std::old_io::File;
 use lval::LVal;
 use lenv::LEnv;
 use eval::eval;
@@ -14,7 +14,7 @@ pub fn builtin_lambda(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
     let formals = args.remove(0);
     let body    = args.remove(0);
 
-    for argument in formals.as_values().iter() {
+    for argument in formals.as_values() {
         if let LVal::Sym(_) = *argument {}
         else {
             err!("cannot use non-symbol as argument: `{}`", argument)
@@ -30,7 +30,7 @@ enum VariableLocation {
     Global
 }
 
-impl fmt::String for VariableLocation {
+impl fmt::Display for VariableLocation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             VariableLocation::Local => write!(f, "{}", "="),
@@ -47,7 +47,7 @@ pub fn builtin_var(loc: VariableLocation, env: &mut LEnv, mut args: Vec<LVal>) -
     let symbols = args.remove(0).into_values();
 
     // Ensure all elements of first list are symbols
-    for symbol in symbols.iter() {
+    for symbol in &symbols {
         if let LVal::Sym(_) = *symbol {}
         else {
             err!("cannot `def`ine non-symbol: `{}`", symbol)
@@ -103,20 +103,20 @@ pub fn builtin_load(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
     // Read the file
     let filename = args.remove(0).into_str();
-    let contents = match File::open(&Path::new(&*filename)).read_to_string() {
+    let contents = match File::open(&Path::new(&filename)).read_to_string() {
         Ok(s) => s,
         Err(err) => return LVal::err(format!("{}", err))
     };
 
     // Parse it
-    let ast = match Parser::parse(&*contents, &*filename) {
+    let ast = match Parser::parse(&contents, &filename) {
         Ok(lval) => lval,
-        Err(err) => return LVal::err(format!("{}", err))
+        Err(err) => return LVal::err(format!("{:?}", err))
     };
     let exprs = LVal::from_ast(ast).into_values();
 
     // Run it
-    for val in exprs.into_iter() {
+    for val in exprs {
         let result = eval(env, val);
 
         if let LVal::Err(..) = result {

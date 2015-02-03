@@ -27,7 +27,7 @@ pub enum LexerError {
     }
 }
 
-impl std::fmt::String for LexerError {
+impl std::fmt::Debug for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             LexerError::UnexpectedChar { ref expected, ref found, ref location } => {
@@ -199,7 +199,7 @@ impl<'a> FileLexer<'a> {
         };
         let number = self.collect(|c| c.is_numeric() || *c == '.');
 
-        let number = if let Some(m) = number.parse() { m }
+        let number = if let Ok(m) = number.parse() { m }
                       else { invalid_number!(number; self.get_source()) };
 
         Ok(Token::NUMBER(sign * number))

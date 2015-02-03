@@ -41,7 +41,7 @@ pub fn builtin_join(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
     let mut joined = args.remove(0);
 
-    for arg in args.into_iter() {
+    for arg in args {
         joined.extend(arg);
     }
 

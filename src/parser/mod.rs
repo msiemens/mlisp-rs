@@ -25,7 +25,7 @@ pub enum ParserError {
     FromLexer(LexerError)
 }
 
-impl std::fmt::String for ParserError {
+impl std::fmt::Debug for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             ParserError::UnexpectedToken { ref found, ref expected, ref location } => {
@@ -38,7 +38,7 @@ impl std::fmt::String for ParserError {
                     }
                 }
             },
-            ParserError::FromLexer(ref lxerr) => write!(f, "{}", lxerr)
+            ParserError::FromLexer(ref lxerr) => write!(f, "{:?}", lxerr)
         }
     }
 }
@@ -263,8 +263,8 @@ mod tests {
 
     use super::*;
 
-    fn parse<'a, T>(toks: Vec<Token>, f: F) -> T where F: Fn(&mut Parser<'a>) -> T {
-        f(&mut Parser::with_lexer(box toks as Box<Lexer>).unwrap())
+    fn parse<'a, F, T>(toks: Vec<Token>, f: F) -> T where F: Fn(&mut Parser<'a>) -> T {
+        f(&mut Parser::with_lexer(Box::new(toks) as Box<Lexer>).unwrap())
     }
 
     #[test]

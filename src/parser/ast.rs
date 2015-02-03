@@ -27,9 +27,9 @@ impl ExprNode {
     }
 }
 
-impl fmt::String for ExprNode {
+impl fmt::Debug for ExprNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.value)
+        write!(f, "{:?}", self.value)
     }
 }
 
@@ -53,17 +53,17 @@ pub enum Expr {
     Number(f64)
 }
 
-impl fmt::String for Expr {
+impl fmt::Debug for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Expr::Number(i)          => write!(f, "{}", i),
             Expr::String(ref string) => write!(f, "{}", string),
             Expr::Symbol(ref token)  => write!(f, "{}", token),
             Expr::SExpr(ref values)  => {
-                write!(f, "({})", stringify_vec(values))
+                write!(f, "({:?})", stringify_vec(values))
             },
             Expr::QExpr(ref values)  => {
-                write!(f, "{{{}}}", stringify_vec(values))
+                write!(f, "{{{:?}}}", stringify_vec(values))
             }
         }
     }

@@ -13,13 +13,10 @@ lto = true
 opt-level = 0
 debug = true
 
-[profile.test]
-opt-level = 0
-#debug = true
-
 
 [dependencies]
-log = "^0.1.0"
+log = "*"
+ansi_term = "*"
 
 [dependencies.readline]
 git = "https://github.com/msiemens/rust-readline"

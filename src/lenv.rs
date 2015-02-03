@@ -48,7 +48,7 @@ impl LEnv {
     }
 }
 
-impl fmt::String for LEnv {
+impl fmt::Display for LEnv {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.contents)
     }

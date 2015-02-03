@@ -1,3 +1,9 @@
+#![feature(collections)]
+#![feature(core)]
+#![feature(io)]
+#![feature(os)]
+#![feature(env)]
+#![feature(path)]
 #![feature(plugin)]
 #![feature(slicing_syntax)]
 #![feature(unboxed_closures)]
@@ -5,9 +11,8 @@
 //! Lispy-rs
 
 #[plugin] #[macro_use] extern crate log;
-extern crate term;
-extern crate libc;
 
+extern crate ansi_term;
 extern crate readline;
 
 mod parser;
@@ -57,18 +62,18 @@ mod main {
                 let s = if let Some(i) = readline::readline(". ") { i }
                         else { println!(""); break };
 
-                input.push_str(&*s);
+                input.push_str(&s);
 
             }
 
-            readline::add_history(&*input);
+            readline::add_history(&input);
 
             if input == "quit" { break }
 
             // Parsing
-            let ast = match Parser::parse(&*input, "<input>") {
+            let ast = match Parser::parse(&input, "<input>") {
                 Ok(lval) => lval,
-                Err(err) => { print_error(&*format!("{}\n", err)); continue }
+                Err(err) => { print_error(&format!("{}\n", err)); continue }
             };
             let lval = LVal::from_ast(ast);
 
@@ -93,7 +98,7 @@ mod main {
             let mut env = LEnv::new();
             builtin::initialize(&mut env);
 
-            let result = builtin::env::builtin_load(&mut env, vec![LVal::str(&*file)]);
+            let result = builtin::env::builtin_load(&mut env, vec![LVal::str(&file)]);
             if let LVal::Err(..) = result {
                 result.println(&env);
             }
@@ -103,10 +108,18 @@ mod main {
 
 #[cfg(not(test))]
 fn main() {
-    use std::os;
+    use std::env;
 
-    if os::args().len() >= 2 {
-        main::run_files(os::args())
+    let args: Vec<_> = env::args()
+                            .map(|s| s.into_string())
+                            .map(|s| match s {
+                                Ok(s) => s,
+                                Err(e) => panic!("Invalid cmd arg: {:?}", e)
+                            })
+                            .collect();
+
+    if args.len() >= 2 {
+        main::run_files(args)
     } else {
         main::repl()
     }

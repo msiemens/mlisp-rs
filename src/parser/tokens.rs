@@ -21,7 +21,7 @@ pub enum Token {
     PLACEHOLDER
 }
 
-impl fmt::String for Token {
+impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Token::LPAREN        => write!(f, "("),
@@ -39,7 +39,7 @@ impl fmt::String for Token {
     }
 }
 
-impl fmt::Show for Token {
+impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self)
     }
@@ -55,7 +55,7 @@ pub struct SourceLocation {
     pub lineno: usize
 }
 
-impl fmt::String for SourceLocation {
+impl fmt::Display for SourceLocation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}", self.filename, self.lineno)
     }

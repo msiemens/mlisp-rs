@@ -11,7 +11,7 @@ enum OrderingType {
     Greater
 }
 
-impl fmt::String for OrderingType {
+impl fmt::Display for OrderingType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             OrderingType::Less         => write!(f, "{}", "<"),
@@ -52,7 +52,7 @@ pub fn builtin_ord(ord: OrderingType, args: Vec<LVal>) -> LVal {
     let mut result = true;
     let mut x = *args[0].as_num();
 
-    for arg in args.into_iter() {
+    for arg in args {
         let y = arg.into_num();
 
         match ord {
@@ -74,7 +74,7 @@ enum CmpType {
     Neq
 }
 
-impl fmt::String for CmpType {
+impl fmt::Display for CmpType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             CmpType::Eq  => write!(f, "{}", "=="),
