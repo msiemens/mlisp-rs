@@ -17,6 +17,4 @@ debug = true
 [dependencies]
 log = "*"
 ansi_term = "*"
-
-[dependencies.readline]
-git = "https://github.com/msiemens/rust-readline"
+readline-sys = "*"

@@ -31,7 +31,7 @@ fn builtin_op(op: ArithmeticOp, mut args: Vec<LVal>) -> LVal {
 
     // Make sure all arguments are numbers
     builtin_assert!(op; args[*] is number);
-    builtin_assert!(op; args.len() >= 1us);
+    builtin_assert!(op; args.len() >= 1);
 
     //let mut x = *args[0].as_num();
     let mut x = args.remove(0).into_num();
@@ -41,7 +41,7 @@ fn builtin_op(op: ArithmeticOp, mut args: Vec<LVal>) -> LVal {
         return LVal::num(-1.0 * x)
     }
 
-    builtin_assert!(op; args.len() >= 1us);
+    builtin_assert!(op; args.len() >= 1);
 
     for arg in args {
         let y = arg.into_num();

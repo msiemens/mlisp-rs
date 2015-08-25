@@ -1,19 +1,19 @@
 #![feature(collections)]
 #![feature(core)]
+#![feature(fs)]
 #![feature(io)]
-#![feature(os)]
 #![feature(env)]
 #![feature(path)]
+
 #![feature(plugin)]
-#![feature(slicing_syntax)]
 #![feature(unboxed_closures)]
 
 //! Lispy-rs
 
-#[plugin] #[macro_use] extern crate log;
+#[macro_use] extern crate log;
 
 extern crate ansi_term;
-extern crate readline;
+extern crate "readline-sys" as readline;
 
 mod parser;
 mod lval;
@@ -73,7 +73,7 @@ mod main {
             // Parsing
             let ast = match Parser::parse(&input, "<input>") {
                 Ok(lval) => lval,
-                Err(err) => { print_error(&format!("{}\n", err)); continue }
+                Err(err) => { print_error(&format!("{:?}\n", err)); continue }
             };
             let lval = LVal::from_ast(ast);
 
@@ -110,13 +110,7 @@ mod main {
 fn main() {
     use std::env;
 
-    let args: Vec<_> = env::args()
-                            .map(|s| s.into_string())
-                            .map(|s| match s {
-                                Ok(s) => s,
-                                Err(e) => panic!("Invalid cmd arg: {:?}", e)
-                            })
-                            .collect();
+    let args: Vec<_> = env::args().collect();
 
     if args.len() >= 2 {
         main::run_files(args)

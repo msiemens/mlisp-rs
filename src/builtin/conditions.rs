@@ -46,7 +46,7 @@ pub fn builtin_gt(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 pub fn builtin_ord(ord: OrderingType, args: Vec<LVal>) -> LVal {
     use self::OrderingType::*;
 
-    builtin_assert!(ord; args.len() >= 2us);
+    builtin_assert!(ord; args.len() >= 2);
     builtin_assert!(ord; args[*] is number);
 
     let mut result = true;
@@ -97,7 +97,7 @@ pub fn builtin_neq(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 pub fn builtin_cmp(cmp: CmpType, args: Vec<LVal>) -> LVal {
     use self::CmpType::*;
 
-    builtin_assert!(cmp; args.len() == 2us);
+    builtin_assert!(cmp; args.len() == 2);
 
     let ref o1 = args[0];
     let ref o2 = args[1];
@@ -110,13 +110,13 @@ pub fn builtin_cmp(cmp: CmpType, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_if(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("if"; args.len() >= 2us);
-    builtin_assert!("if"; args.len() <= 3us);
-    builtin_assert!("if"; args[0us] is number);
-    builtin_assert!("if"; args[1us] is qexpr);
+    builtin_assert!("if"; args.len() >= 2);
+    builtin_assert!("if"; args.len() <= 3);
+    builtin_assert!("if"; args[0] is number);
+    builtin_assert!("if"; args[1] is qexpr);
 
     if args.len() == 3 {
-        builtin_assert!("if"; args[2us] is qexpr);
+        builtin_assert!("if"; args[2] is qexpr);
     }
 
     let test = args.remove(0).into_num();
@@ -138,7 +138,7 @@ pub fn builtin_if(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_and(_: &mut LEnv, args: Vec<LVal>) -> LVal {
-    builtin_assert!("and"; args.len() == 2us);
+    builtin_assert!("and"; args.len() == 2);
     builtin_assert!("and"; args[*] is number);
 
     let n1 = (*args[0].as_num()) != 0.;
@@ -149,7 +149,7 @@ pub fn builtin_and(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_or(_: &mut LEnv, args: Vec<LVal>) -> LVal {
-    builtin_assert!("or"; args.len() == 2us);
+    builtin_assert!("or"; args.len() == 2);
     builtin_assert!("or"; args[*] is number);
 
     let n1 = (*args[0].as_num()) != 0.;
@@ -160,8 +160,8 @@ pub fn builtin_or(_: &mut LEnv, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_not(_: &mut LEnv, args: Vec<LVal>) -> LVal {
-    builtin_assert!("not"; args.len() == 1us);
-    builtin_assert!("not"; args[0us] is number);
+    builtin_assert!("not"; args.len() == 1);
+    builtin_assert!("not"; args[0] is number);
 
     let n = (*args[0].as_num()) != 0.;
 

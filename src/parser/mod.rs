@@ -2,7 +2,7 @@
 
 use std;
 use std::borrow::ToOwned;
-use std::collections::DList;
+use std::collections::LinkedList;
 use parser::ast::{Expr, ExprNode};
 use parser::tokens::{Token, SourceLocation};
 use parser::lexer::{Lexer, FileLexer, LexerError};
@@ -81,7 +81,7 @@ macro_rules! unexpected(
 pub struct Parser<'a> {
     location: SourceLocation,
     token: Token,
-    buffer: DList<Token>,
+    buffer: LinkedList<Token>,
     lexer: Box<Lexer + 'a>
 }
 
@@ -99,7 +99,7 @@ impl<'a> Parser<'a> {
         Ok(Parser {
             token: try!(lx.next_token()),
             location: lx.get_source(),
-            buffer: DList::new(),
+            buffer: LinkedList::new(),
             lexer: lx
         })
     }

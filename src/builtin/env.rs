@@ -1,5 +1,6 @@
 use std::fmt;
-use std::old_io::File;
+use std::fs::File;
+use std::io::Read;
 use lval::LVal;
 use lenv::LEnv;
 use eval::eval;
@@ -7,9 +8,9 @@ use parser::Parser;
 
 
 pub fn builtin_lambda(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("\\"; args.len() == 2us);
-    builtin_assert!("\\"; args[0us] is qexpr);
-    builtin_assert!("\\"; args[1us] is qexpr);
+    builtin_assert!("\\"; args.len() == 2);
+    builtin_assert!("\\"; args[0] is qexpr);
+    builtin_assert!("\\"; args[1] is qexpr);
 
     let formals = args.remove(0);
     let body    = args.remove(0);
@@ -41,8 +42,8 @@ impl fmt::Display for VariableLocation {
 
 
 pub fn builtin_var(loc: VariableLocation, env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!(loc; args.len() >= 1us);
-    builtin_assert!(loc; args[0us] is qexpr);
+    builtin_assert!(loc; args.len() >= 1);
+    builtin_assert!(loc; args[0] is qexpr);
 
     let symbols = args.remove(0).into_values();
 
@@ -86,8 +87,8 @@ pub fn builtin_put(env: &mut LEnv, args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_eval(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("eval"; args.len() == 1us);
-    builtin_assert!("eval"; args[0us] is qexpr);
+    builtin_assert!("eval"; args.len() == 1);
+    builtin_assert!("eval"; args[0] is qexpr);
 
     // Take 1st argument
     let qexpr = args.remove(0);
@@ -98,12 +99,18 @@ pub fn builtin_eval(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_load(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("load"; args.len() == 1us);
-    builtin_assert!("load"; args[0us] is string);
+    builtin_assert!("load"; args.len() == 1);
+    builtin_assert!("load"; args[0] is string);
 
     // Read the file
     let filename = args.remove(0).into_str();
-    let contents = match File::open(&Path::new(&filename)).read_to_string() {
+    let mut file = match File::open(&Path::new(&filename)) {
+        Ok(f) => f,
+        Err(err) => return LVal::err(format!("{}", err))
+    };
+
+    let mut contents = String::new();
+    match file.read_to_string(&mut contents) {
         Ok(s) => s,
         Err(err) => return LVal::err(format!("{}", err))
     };
@@ -129,8 +136,8 @@ pub fn builtin_load(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_error(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("error"; args.len() == 1us);
-    builtin_assert!("error"; args[0us] is string);
+    builtin_assert!("error"; args.len() == 1);
+    builtin_assert!("error"; args[0] is string);
 
     let msg = args.remove(0).into_str();
     LVal::Err(msg)
@@ -138,7 +145,7 @@ pub fn builtin_error(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_println(env: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("println"; args.len() == 1us);
+    builtin_assert!("println"; args.len() == 1);
 
     let lval = args.remove(0);
     lval.println(env);

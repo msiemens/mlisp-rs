@@ -3,8 +3,8 @@ use lenv::LEnv;
 
 
 pub fn builtin_head(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("head"; args.len() == 1us);
-    builtin_assert!("head"; args[0us] != {});
+    builtin_assert!("head"; args.len() == 1);
+    builtin_assert!("head"; args[0] != {});
 
     // Take 1st argument
     let mut qexpr = args.remove(0).into_values();
@@ -19,8 +19,8 @@ pub fn builtin_head(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_tail(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("tail"; args.len() == 1us);
-    builtin_assert!("tail"; args[0us] != {});
+    builtin_assert!("tail"; args.len() == 1);
+    builtin_assert!("tail"; args[0] != {});
 
     // Take 1st argument
     let qexpr = args.remove(0);
@@ -50,8 +50,8 @@ pub fn builtin_join(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
 
 
 pub fn builtin_cons(_: &mut LEnv, mut args: Vec<LVal>) -> LVal {
-    builtin_assert!("cons"; args.len() == 2us);
-    builtin_assert!("cons"; args[1us] is qexpr);
+    builtin_assert!("cons"; args.len() == 2);
+    builtin_assert!("cons"; args[1] is qexpr);
 
     let mut value = LVal::qexpr();
     value.append(args.remove(0));
